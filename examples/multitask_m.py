@@ -46,21 +46,16 @@ import sys
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.multitask as mt_map_elites
+import map_elites.multitask_mod as mt_map_elites
 import map_elites.common as cm_map_elites
 
-def arm(angles, task):
-    angular_range = task[0] / len(angles)
-    lengths = np.ones(len(angles)) * task[1] / len(angles)
-    target = 0.5 * np.ones(2)
-    a = kinematic_arm.Arm(lengths)
-    # command in
-    command = (angles - 0.5) * angular_range * math.pi * 2
-    ef, _ = a.fw_kinematics(command)
-    f = -np.linalg.norm(ef - target)
+
+
+def fitness(ind, env):
+    #np.linalg.norm(ind - env) is the mismatch
+    # The 10 is arbitrary, worst fitness possible is 6.83772..
+    f = 10 - np.linalg.norm(ind - env)
     return f
-
-
 
 if len(sys.argv) == 1 or ('help' in sys.argv):
     print("Usage: \"python3 ./examples/multitask_arm.py 10 [no_distance]\"")
@@ -74,14 +69,18 @@ px = cm_map_elites.default_params.copy()
 px["dump_period"] = 2000
 px["parallel"] = False
 
-n_tasks = 1000
-dim_map = 2
-# example : create centroids using a CVT
-c = cm_map_elites.cvt(n_tasks, dim_map, 30000, True)
 
-# CVT-based version
-if len(sys.argv) == 2 or sys.argv[2] == 'distance':
-    archive = mt_map_elites.compute(dim_x = dim_x, f=arm, centroids=c, max_evals=1e6, params=px, log_file=open('mt_dist.dat', 'w'))
-else:
-    # no distance:
-    archive = mt_map_elites.compute(dim_x = dim_x, f=arm, tasks=c, max_evals=1e6, params=px, log_file=open('mt_no_dist.dat', 'w'))
+#Generate environements
+# 10 bits = 1024 env
+n = 10
+env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
+
+
+#From string to binary
+for i in range(len(env_list)):
+    env_list[i] = [int(numeric_string) for numeric_string in env_list[i]]
+
+#Every environment sum is == 5
+env_list = [i for i in env_list if sum(i) == 5]
+
+archive = mt_map_elites.compute(dim_x = dim_x, f=fitness, tasks=env_list, max_evals=1e6, params=px, log_file=open('mt_no_dist.dat', 'w'))
