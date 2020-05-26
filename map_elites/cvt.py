@@ -47,7 +47,6 @@ from sklearn.neighbors import KDTree
 from map_elites import common as cm
 
 
-
 def __add_to_archive(s, centroid, archive, kdt):
     niche_index = kdt.query([centroid], k=1)[1][0][0]
     niche = kdt.data[niche_index]
