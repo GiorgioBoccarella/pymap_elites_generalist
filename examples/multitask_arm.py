@@ -61,7 +61,6 @@ def arm(angles, task):
     return f
 
 
-
 if len(sys.argv) == 1 or ('help' in sys.argv):
     print("Usage: \"python3 ./examples/multitask_arm.py 10 [no_distance]\"")
     exit(0)
@@ -74,7 +73,7 @@ px = cm_map_elites.default_params.copy()
 px["dump_period"] = 2000
 px["parallel"] = False
 
-n_tasks = 1000
+n_tasks = 5000
 dim_map = 2
 # example : create centroids using a CVT
 c = cm_map_elites.cvt(n_tasks, dim_map, 30000, True)
