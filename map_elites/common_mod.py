@@ -72,10 +72,11 @@ default_params = \
     }
 
 class Species:
-    def __init__(self, x, desc, fitness, centroid=None):
+    def __init__(self, x, desc, fitness, type, centroid=None):
         self.x = x
         self.desc = desc
         self.fitness = fitness
+        self.type = type
         self.centroid = centroid
 
 

@@ -15,14 +15,13 @@ for i in range(len(env_list)):
 env_list = [i for i in env_list if sum(i) == 5]
 
 
-
 #10 is also the number of traits that the individual can "invest" in
 # T = (T1, T2, T3...T10)
 # Sum of T_i is always 1 (trade-off)
 # Mutation is for example T2 =- 0.1 and respectively T6 =+ 0.1
 
 #Initialize one individual
-ind1 = np.random.dirichlet(np.ones(10),size=1) #sum = 1
+ind1 = [np.random.dirichlet(np.ones(10),size=1)] #sum = 1
 #ind2 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  dtype=float)
 print(np.sum(ind1)) #sum close to one but not exactly 1 #TODO
 
@@ -45,8 +44,8 @@ fit = 0
 #fitness(ind1, env_list[834])
 def fitness(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
-    # The 10 is arbitrary, worst fitness possible is 6.83772..
-    fit = 10 - np.linalg.norm(ind - env)
+    # The 7 is arbitrary, worst fitness possible is 6.83772..
+    fit = 7 - np.linalg.norm(ind - env)
     return fit
 
 
@@ -58,6 +57,12 @@ for i in range(len(env_list)):
 
 
 
+
+m = 5
+n = 10
+a = np.zeros((m, n), dtype=int)
+cols = np.random.binomial(1, 0.7, size=n)
+a[np.random.randint(0, m, size=cols.sum()), np.nonzero(cols)[0]] = 1
 
 
 

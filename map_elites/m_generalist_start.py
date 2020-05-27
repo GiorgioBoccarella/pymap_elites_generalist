@@ -117,13 +117,16 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
 def mutate(ind):
     z = ind.copy()
     # select a random trait
-    T_x = random.randint(0, len(ind) - 1)
+    for i in range(0, 100):
+        T_x = random.randint(0, len(ind) - 1)
     # select a random trait different from previous one
-    T_y = random.choice([i for i in range(0, 10) if i != T_x])
-
-    #Avoid ind[T_x] to go lower then 0 and ind[T_y] to go higher then 1
-    step = np.random.uniform(0, min(ind[T_x], (-ind[T_y] + 1)))
-
+        T_y = random.choice([i for i in range(0, 10) if i != T_x])
+        step = min(ind[T_x], (-ind[T_y] + 1))
+        if step > 0.1:
+            step = 0.1
+            break
+        else:
+            continue
 
     z[T_x] -= step
     z[T_y] += step
@@ -192,9 +195,9 @@ def compute(dim_map=-1,
         if len(archive) <= params['random_init'] * n_tasks:
             # initialize the map with random individuals
             for i in range(0, params['random_init_batch']):
-                # create a random individual
-                x = np.random.rand(dim_x)
-                x = (x / sum(x))*(dim_x/2)
+                # create a random individual perfectly specialized to one of the task
+                x = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+                x = x.astype(float)
                 # we take a random task
                 n = np.random.randint(0, n_tasks)
                 to_evaluate += [(x, f, tasks[n], centroids[n], params)]
