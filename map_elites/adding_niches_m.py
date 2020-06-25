@@ -51,6 +51,7 @@ from scipy.spatial import distance
 
 from map_elites import common as cm
 
+add_a = int(sys.argv[2])
 
 def add_to_archive(s, archive):
     centroid = cm.make_hashable(s.centroid)
@@ -92,12 +93,16 @@ def bandit(successes, n_niches):
     return t_size
 
 # select the niche according to
-def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
+def select_niche(x, z, f, centroids, tasks, t_size, params, n_evals, rm, use_distance=False):
     to_evaluate = []
     if not use_distance:
         # No distance: evaluate on a random niche
-        niche = np.random.randint(len(tasks))
-        to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
+        if n_evals <= add_a:
+            niche = np.random.randint(rm)
+            to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
+        elif n_evals > add_a:
+            niche = np.random.randint(len(tasks))
+            to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
     else:
         # we select the parent (a single one), then we select the niche
         # with a tournament based on the task distance
@@ -128,6 +133,23 @@ def mutate(ind):
     z[T_x] -= step
     z[T_y] += step
     return z
+
+def mutate_norm(ind):
+    z = ind.copy()
+
+    # select two random traits
+    T_x = random.randint(0, len(ind) - 1)
+    T_y = random.choice([i for i in range(0, len(ind)) if i != T_x])
+
+    step = min(ind[T_x], (-ind[T_y] + 1))
+    s = np.random.normal(0, 0.1, 1)
+    if s > step :
+        s = step
+
+    z[T_x] -= step
+    z[T_y] += step
+    return z
+
 
 
 def compute(dim_map=-1,
@@ -181,6 +203,9 @@ def compute(dim_map=-1,
     num_cores = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_cores)
 
+    task_r = float(sys.argv[3])
+    rm = n_tasks * (1 - round((task_r/10), 1))  
+
     # main loop
     n_evals = 0 # number of evaluations
     b_evals = 0 # number evaluation since the last dump
@@ -196,7 +221,7 @@ def compute(dim_map=-1,
                 x = np.random.rand(dim_x)
                 x = (x / sum(x))*(dim_x/2)
                 # we take a random task
-                n = np.random.randint(0, n_tasks)
+                n = np.random.randint(0, rm)
                 to_evaluate += [(x, f, tasks[n], centroids[n], params)]
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
@@ -212,9 +237,9 @@ def compute(dim_map=-1,
                 # ind selection
                 x = archive[keys[rand1[n]]]
                 # add variation
-                z = mutate(x.x)
+                z = mutate_norm(x.x)
                 # different modes for multi-task (to select the niche)
-                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)
+                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, n_evals, rm, use_distance)
             # parallel evaluation of the fitness
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)

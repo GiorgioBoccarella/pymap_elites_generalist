@@ -209,8 +209,10 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
         s_list = map(evaluate_function, to_evaluate)
     return list(s_list)
 
+perc = int(sys.argv[3])
+perc = round(perc/10, 1)
 
-
+folder_name = f'{str(int(sys.argv[1]))}_{str(int(sys.argv[2]))}_{str(perc)}'
 
 # format: fitness, centroid, desc, genome \n
 # fitness, centroid, desc and x are vectors
@@ -218,7 +220,7 @@ def __save_archive(archive, gen):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
-    filename = '/home/giorgio/Documents/results/archive_' + str(gen) + '.dat'
+    filename = f'/home/giorgio/Documents/result_add_n/{str(int(sys.argv[1]))}_{str(int(sys.argv[2]))}_{str(perc)}/archive_' + str(gen) + '.dat'
     with open(filename, 'w') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')

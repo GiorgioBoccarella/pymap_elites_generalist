@@ -45,27 +45,29 @@ import sys
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.m_sg_double_task as mt_map_elites
+import map_elites.adding_niches_m as mt_map_elites
 import map_elites.common as cm_map_elites
 
 
 def fitness(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
-    ind = ind[0:(len(ind) - 1)]
-    f = 10 - np.linalg.norm(ind - env)
+    f = len(ind) - np.linalg.norm(ind - env)
     return f
 
 
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
-px["dump_period"] = 0
+px["dump_period"] = 100
 px["parallel"] = True
-px["batch_size"] = 5000
+px["batch_size"] = 10
+
+
+dim_x = int(sys.argv[1])
 
 #Generate environements
 # 10 bits = 1024 env
-n = 14
+n = dim_x
 env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 
 #From string to binary
@@ -74,6 +76,4 @@ for i in range(len(env_list)):
 #Every environment sum is == 5
 env_list = [i for i in env_list if sum(i) == n/2]
 
-dim_x = n
-
-archive = mt_map_elites.compute(dim_x = dim_x, f=fitness, tasks=env_list, max_evals=1e6, params=px, log_file=open('mt_no_dist.dat', 'w'))
+archive = mt_map_elites.compute(dim_x = dim_x, f=fitness, tasks=env_list, max_evals=1e4, params=px, log_file=open('mt_no_dist.dat', 'w'))
