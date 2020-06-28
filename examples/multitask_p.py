@@ -65,7 +65,7 @@ px["batch_size"] = 10
 
 #Generate environements
 # 10 bits = 1024 env
-n = 6
+n = 10
 env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 
 #From string to binary

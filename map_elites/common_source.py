@@ -225,7 +225,6 @@ def __save_archive(archive, gen):
             write_array(k.centroid, f)
             write_array(k.desc, f)
             write_array(k.x, f)
-            write_array(k.type, f)
             f.write(str(gen))
             f.write("\n")
 
