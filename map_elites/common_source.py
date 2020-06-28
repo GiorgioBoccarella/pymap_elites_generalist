@@ -72,11 +72,10 @@ default_params = \
     }
 
 class Species:
-    def __init__(self, x, desc, fitness, type, centroid=None):
+    def __init__(self, x, desc, fitness, centroid=None):
         self.x = x
         self.desc = desc
         self.fitness = fitness
-        self.type = type
         self.centroid = centroid
 
 
@@ -219,7 +218,7 @@ def __save_archive(archive, gen):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
-    filename = '/home/giorgio/Documents/results/archive_' + str(gen) + '.dat'
+    filename = 'C:\Users\Users\giorg\Documents\results\archive_' + str(gen) + '.dat'
     with open(filename, 'w') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')
