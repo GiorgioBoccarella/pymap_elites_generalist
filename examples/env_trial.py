@@ -30,25 +30,31 @@ env_list = [i for i in env_list if sum(i) == n/2]
 #if we split the sequence in half we have the same sum
 env_list = [i for i in env_list if half_sum(i) == 0]
 
-
 env_list = np.array(env_list)
 
 n_e = len(env_list)
 
 map = np.zeros((n_e, n_e))
+map1 = np.zeros((n_e, n_e))
 
 for i in range(n_e):
     for j in range(n_e):
         map[i][j] = distance(env_list[i], env_list[j])
 
+order = map[0][:]
+env_list1 = env_list[order.argsort()]
 
 #plt.imshow(map, cmap='hot', interpolation='nearest')
 #plt.show()
 
-ax = sns.heatmap(map, linewidth=0.5)
+for i in range(n_e):
+    for j in range(n_e):
+        map1[i][j] = distance(env_list1[i], env_list1[j])
+
+mask = np.triu(map1)
+ax = sns.heatmap(map1, mask=mask)
 plt.show()
-
-
 
 #TODO
 # I could append the coordinates to a vector and then plot a line
+# Implementing in main model

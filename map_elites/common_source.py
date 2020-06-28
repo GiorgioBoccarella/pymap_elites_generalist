@@ -218,7 +218,7 @@ def __save_archive(archive, gen):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
-    filename = 'C:\Users\Users\giorg\Documents\results\archive_' + str(gen) + '.dat'
+    filename = 'Users\giorg\Documents\results\archive_' + str(gen) + '.dat'
     with open(filename, 'w') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')
