@@ -45,7 +45,7 @@ import sys
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.m_diffuse_s as mt_map_elites
+import map_elites.m_diffuse_analitic as mt_map_elites
 import map_elites.common_source as cm_map_elites
 
 
@@ -58,14 +58,14 @@ def fitness(ind, env):
 
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
-px["dump_period"] = 100
-px["parallel"] = True
+px["dump_period"] = 0
+px["parallel"] = False
 px["batch_size"] = 10
 
 
 #Generate environements
 # 10 bits = 1024 env
-n = 10
+n = 6
 env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 
 #From string to binary
@@ -79,4 +79,9 @@ env_list = [i for i in env_list if sum(i) == n/2]
 
 dim_x = n
 
-archive = mt_map_elites.compute(dim_x = dim_x, f=fitness, tasks=env_list, max_evals=1e3, params=px, log_file=open('mt_no_dist.dat', 'w'))
+s = 3
+
+for s in range(0, s):
+    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=10e2, params=px, sim=s,
+                                    log_file=open('mt_no_dist.dat', 'w'))
+    print(s)

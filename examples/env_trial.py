@@ -41,8 +41,8 @@ for i in range(n_e):
     for j in range(n_e):
         map[i][j] = distance(env_list[i], env_list[j])
 
-order = map[0][:]
-env_list1 = env_list[order.argsort()]
+#order = map[0][:]
+#env_list1 = env_list[order.argsort()]
 
 #plt.imshow(map, cmap='hot', interpolation='nearest')
 #plt.show()
@@ -58,3 +58,19 @@ plt.show()
 #TODO
 # I could append the coordinates to a vector and then plot a line
 # Implementing in main model
+
+for key, value in dict.iteritems():
+    temp = [key,value]
+    dictlist.append(temp)
+
+
+def plot_best(the_map, occ_n, iteration_number):
+    mask = np.triu(map)
+    ax = sns.heatmap(map, mask=mask)
+
+    x = [0.5] + [x + 0.5 for x in occ_n[0:len(occ_n) - 1]] + [len(map) - 0.5]
+    y = [0.5] + [x + 0.5 for x in occ_n[1:len(occ_n)]] + [len(map) - 0.5]
+
+    plt.plot(x, y, marker='o', linewidth=4, markersize=12, linestyle="-", color='white')
+    #plt.savefig('images/new1000plot_%i.png' % (iteration_number), dpi=300)
+    plt.show()

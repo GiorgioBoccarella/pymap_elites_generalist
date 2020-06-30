@@ -53,31 +53,22 @@ import seaborn as sns
 
 from map_elites import common_source as cm
 
-def plot_best(map1, occ_n, iteration_number):
-    ax = sns.heatmap(map1, cbar=False)
-
-    x = [0.5] + [x + 0.5 for x in occ_n[0:len(occ_n) - 1]] + [len(map1) - 0.5]
-    y = [0.5] + [x + 0.5 for x in occ_n[1:len(occ_n)]] + [len(map1) - 0.5]
-
-    plt.plot(x, y, marker='o', color='white')
-    plt.savefig('C:/Users/giorg/Pictures/Plots/new1000plot_%i.png'% (iteration_number), dpi=300)
-    #plt.show()
 
 def distance(env1, env2):
     d = np.linalg.norm(env1 - env2)
     return d
 
 
-def add_to_archive(s, archive):
+def add_to_archive(s, archive, d):
     centroid = cm.make_hashable(s.centroid)
     if centroid in archive:
         if s.fitness > archive[centroid].fitness:
             archive[centroid] = s
-            return 1
-        return 0
+            return 1, d
+        return 0, 0
     else:
         archive[centroid] = s
-        return 1
+        return 1, d
 
 # evaluate a single vector (z) with a function f and return a species
 # t = vector, function
@@ -113,6 +104,7 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
     if not use_distance:
         # No distance: evaluate on a random niche
         niche = np.random.randint(len(tasks))
+        d = distance(tasks[niche], z)
         to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
     else:
         # we select the parent (a single one), then we select the niche
@@ -128,7 +120,7 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
         cd = distance.cdist(niches_centroids, [x.centroid], 'euclidean')
         cd_min = np.argmin(cd)
         to_evaluate += [(z, f, niches_tasks[cd_min], niches_centroids[cd_min], params)]
-    return to_evaluate
+    return to_evaluate, d
 
 def mutate(ind):
     z = ind.copy()
@@ -157,6 +149,7 @@ def compute(dim_map=-1,
             tasks=[],
             variation_operator=cm.variation,
             params=cm.default_params,
+            sim = 1,
             log_file=None):
     """Multi-task MAP-Elites
     - if there is no centroid : random assignation of niches
@@ -194,6 +187,8 @@ def compute(dim_map=-1,
     # init archive (empty)
     archive = {}
 
+    suc = 0
+    dtot = 0
     init_count = 0
 
     # init multiprocessing
@@ -213,7 +208,8 @@ def compute(dim_map=-1,
             for i in range(0, params['random_init_batch']):
                 # create a random individual perfectly specialized to one of the task
                 x = np.random.randint(0, n_tasks)
-                x = np.asarray(tasks[x])
+                #x = np.asarray(tasks[x])
+                x = np.repeat(0.5, len(tasks[x]))
                 x = x.astype(float)
                 # we take a random task
                 n = np.random.randint(0, n_tasks)
@@ -221,8 +217,9 @@ def compute(dim_map=-1,
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
             b_evals += len(to_evaluate)
+            d = 0
             for i in range(0, len(list(s_list))):
-                add_to_archive(s_list[i], archive)
+                add_to_archive(s_list[i], archive, d)
         else:
             # main variation/selection loop
             keys = list(archive.keys())
@@ -234,7 +231,8 @@ def compute(dim_map=-1,
                 # add variation
                 z = mutate(x.x)
                 # different modes for multi-task (to select the niche)
-                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)
+                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)[0]
+                d = select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)[1]
             # parallel evaluation of the fitness
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
@@ -242,7 +240,8 @@ def compute(dim_map=-1,
             # natural selection
             suc = 0
             for i in range(0, len(list(s_list))):
-                suc += add_to_archive(s_list[i], archive)
+                suc += add_to_archive(s_list[i], archive, d)[0]
+                d += add_to_archive(s_list[i], archive, d)[1]
             if use_distance:
                 successes[t_size] += [(suc, n_evals)]
         if use_distance: # call the bandit to optimize t_size
@@ -251,27 +250,20 @@ def compute(dim_map=-1,
 
         # write archive
         if params['dump_period'] != -1 and b_evals > params['dump_period']:
-            cm.__save_archive(archive, n_evals)
+            cm.__save_archive(archive, n_evals, sim)
             b_evals = 0
             n_e = [len(v) for v in successes.values()]
+            dtot += d
             print(n_evals, n_e)
-            #My mod
-            task_tot = np.array(tasks)
-            env_l = list(archive.keys())
-            env_a = np.array(env_l)
-            print(env_a)
-            my_map_h = np.zeros((n_tasks, n_tasks))
-            for i in range(n_tasks):
-                for j in range(n_tasks):
-                    my_map_h[i][j] = distance(task_tot[i], task_tot[j])
-            plot_best(my_map_h, env_a, n_evals)
-            #
+            print(d)
+            print(dtot)
+            print(suc)
             np.savetxt('t_size.dat', np.array(n_e))
         if log_file != None:
             fit_list = np.array([x.fitness for x in archive.values()])
             log_file.write("{} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()), fit_list.max(), np.mean(fit_list), np.median(fit_list), np.percentile(fit_list, 5), np.percentile(fit_list, 95)))
             log_file.flush()
-    cm.__save_archive(archive, n_evals)
+    cm.__save_archive(archive, n_evals, sim)
     return archive
 
 
