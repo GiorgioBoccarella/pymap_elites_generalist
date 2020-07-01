@@ -104,7 +104,8 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
     if not use_distance:
         # No distance: evaluate on a random niche
         niche = np.random.randint(len(tasks))
-        d = distance(tasks[niche], z)
+        s_niche = tasks[niche]
+        d = distance(s_niche[0:int(len(s_niche) - 1)], z)
         to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
     else:
         # we select the parent (a single one), then we select the niche
@@ -202,8 +203,8 @@ def compute(dim_map=-1,
             for i in range(0, params['random_init_batch']):
                 # create a random individual perfectly specialized to one of the task
                 x = np.random.randint(0, n_tasks)
-                x = np.asarray(tasks[x])
-                #x = np.repeat(0.5, len(tasks[x]))
+                #x = np.asarray(tasks[x])
+                x = np.repeat(0.5, int(len(tasks[x]) - 1))
                 x = x.astype(float)
                 # we take a random task
                 n = np.random.randint(0, n_tasks)
