@@ -74,3 +74,4 @@ def plot_best(the_map, occ_n, iteration_number):
     plt.plot(x, y, marker='o', linewidth=4, markersize=12, linestyle="-", color='white')
     #plt.savefig('images/new1000plot_%i.png' % (iteration_number), dpi=300)
     plt.show()
+

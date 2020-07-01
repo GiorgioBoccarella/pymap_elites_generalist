@@ -217,7 +217,7 @@ def __save_archive(archive, gen, sim):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
-    filename = 'C:/Users/giorg/Documents/results/archive_' + str(sim) + '.dat'
+    filename = '/home/giorg/Documents/results/archive_sim_' + str(sim) + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')

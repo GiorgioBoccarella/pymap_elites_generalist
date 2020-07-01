@@ -126,18 +126,12 @@ def mutate(ind):
     z = ind.copy()
     # select a random trait
     for i in range(0, 100):
-        T_x = random.randint(0, len(ind) - 1)
-    # select a random trait different from previous one
-        T_y = random.choice([i for i in range(0, len(ind)) if i != T_x])
-        step = min(ind[T_x], (-ind[T_y] + 1))
-        if step > 0.1:
-            step = 0.1
-            break
-        else:
-            continue
+        t_x = random.randint(0, len(ind) - 1)
 
-    z[T_x] -= step
-    z[T_y] += step
+    mu, sigma = 0, 0.1
+    step = np.random.normal(mu, sigma, 1)
+    z[t_x] += step
+
     return z
 
 
@@ -208,8 +202,8 @@ def compute(dim_map=-1,
             for i in range(0, params['random_init_batch']):
                 # create a random individual perfectly specialized to one of the task
                 x = np.random.randint(0, n_tasks)
-                #x = np.asarray(tasks[x])
-                x = np.repeat(0.5, len(tasks[x]))
+                x = np.asarray(tasks[x])
+                #x = np.repeat(0.5, len(tasks[x]))
                 x = x.astype(float)
                 # we take a random task
                 n = np.random.randint(0, n_tasks)
@@ -264,6 +258,11 @@ def compute(dim_map=-1,
             log_file.write("{} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()), fit_list.max(), np.mean(fit_list), np.median(fit_list), np.percentile(fit_list, 5), np.percentile(fit_list, 95)))
             log_file.flush()
     cm.__save_archive(archive, n_evals, sim)
+    filename_dtot = '/home/giorg/Documents/results/archive_sim_dtot_s_' + '.dat'
+    with open(filename_dtot, 'a+') as f:
+        f.write(str(dtot) + ' ')
+        f.write(str(sim) + ' ')
+        f.write("\n")
     return archive
 
 
