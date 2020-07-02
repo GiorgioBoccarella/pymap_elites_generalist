@@ -58,7 +58,7 @@ def fitness(ind, env):
 
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
-px["dump_period"] = 0
+px["dump_period"] = 10
 px["parallel"] = False
 px["batch_size"] = 10
 
@@ -82,6 +82,6 @@ dim_x = n
 sim = 1
 
 for s in range(0, sim):
-    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e4, params=px, sim=sim,
+    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e5, params=px, sim=sim,
                                     log_file=open('mt_no_dist.dat', 'w'))
     print(s)

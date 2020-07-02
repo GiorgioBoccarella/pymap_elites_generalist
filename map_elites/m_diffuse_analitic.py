@@ -182,9 +182,6 @@ def compute(dim_map=-1,
     # init archive (empty)
     archive = {}
 
-    suc = 0
-    dtot = 0
-    init_count = 0
 
     # init multiprocessing
     num_cores = multiprocessing.cpu_count()
@@ -248,11 +245,9 @@ def compute(dim_map=-1,
             cm.__save_archive(archive, n_evals, sim)
             b_evals = 0
             n_e = [len(v) for v in successes.values()]
-            dtot += d
             print(n_evals, n_e)
             env_l = list(archive.keys())
             env_a = np.array(env_l)
-            print(env_a)
             keys_a = archive.keys()
             second_word = [archive[x] for x in keys_a]
             #for i in second_word:
@@ -262,7 +257,7 @@ def compute(dim_map=-1,
             ###################################################### My mod
             env_l = list(archive.keys())
             env_a = np.array(env_l)
-            nrows, ncols = 20, 20
+            nrows, ncols = 6, 6
             image = np.zeros(nrows * ncols)
 
             # Set every other cell to a random number (this would be your data)
@@ -295,7 +290,6 @@ def compute(dim_map=-1,
     cm.__save_archive(archive, n_evals, sim)
     filename_dtot = '/home/giorg/Documents/results/archive_sim_dtot_s_' + '.dat'
     with open(filename_dtot, 'a+') as f:
-        f.write(str(dtot) + ' ')
         f.write(str(sim) + ' ')
         f.write("\n")
     return archive

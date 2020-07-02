@@ -99,15 +99,14 @@ def subset_env(env):
 
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
-px["dump_period"] = 0
-px["parallel"] = False
+px["dump_period"] = 1000
+px["parallel"] = True
 px["batch_size"] = 10
-
 
 
 #Generate environements
 # 10 bits = 1024 env
-n = 12
+n = 8
 env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 
 #From string to binary
@@ -126,7 +125,7 @@ dim_x = n
 n_sim = 1
 
 for s in range(0, n_sim):
-    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e2, params=px, sim=n_sim,
+    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e5, params=px, sim=n_sim,
                                     log_file=open('mt_no_dist.dat', 'w'))
     print(s)
 
