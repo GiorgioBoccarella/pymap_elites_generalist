@@ -107,7 +107,7 @@ px["batch_size"] = 10
 
 #Generate environements
 # 10 bits = 1024 env
-n = 4
+n = 12
 env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 
 #From string to binary
@@ -123,9 +123,12 @@ env_list = subset_env(env_list)
 
 dim_x = n
 
-n_sim = 2
+n_sim = 1
 
 for s in range(0, n_sim):
     archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e2, params=px, sim=n_sim,
                                     log_file=open('mt_no_dist.dat', 'w'))
     print(s)
+
+
+

@@ -79,9 +79,9 @@ env_list = [i for i in env_list if sum(i) == n/2]
 
 dim_x = n
 
-s = 2
+sim = 1
 
-for s in range(0, s):
-    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e4, params=px, sim=s,
+for s in range(0, sim):
+    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e4, params=px, sim=sim,
                                     log_file=open('mt_no_dist.dat', 'w'))
     print(s)

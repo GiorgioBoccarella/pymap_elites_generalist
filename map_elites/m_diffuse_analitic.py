@@ -203,7 +203,8 @@ def compute(dim_map=-1,
             for i in range(0, params['random_init_batch']):
                 # create a random individual perfectly specialized to one of the task
                 x = np.random.randint(0, n_tasks)
-                #x = np.asarray(tasks[x])
+                #t = tasks[x]
+                #x = np.asarray(t[0: int(len(tasks[x]) - 1)])
                 x = np.repeat(0.5, int(len(tasks[x]) - 1))
                 x = x.astype(float)
                 # we take a random task
@@ -242,7 +243,6 @@ def compute(dim_map=-1,
         if use_distance: # call the bandit to optimize t_size
             t_size = bandit(successes, n_tasks)
 
-
         # write archive
         if params['dump_period'] != -1 and b_evals > params['dump_period']:
             cm.__save_archive(archive, n_evals, sim)
@@ -250,9 +250,43 @@ def compute(dim_map=-1,
             n_e = [len(v) for v in successes.values()]
             dtot += d
             print(n_evals, n_e)
-            print(d)
-            print(dtot)
-            print(suc)
+            env_l = list(archive.keys())
+            env_a = np.array(env_l)
+            print(env_a)
+            keys_a = archive.keys()
+            second_word = [archive[x] for x in keys_a]
+            #for i in second_word:
+            #   print(i.x)
+
+            #vals = np.fromiter(archive.items().x, dtype=float)
+            ###################################################### My mod
+            env_l = list(archive.keys())
+            env_a = np.array(env_l)
+            nrows, ncols = 20, 20
+            image = np.zeros(nrows * ncols)
+
+            # Set every other cell to a random number (this would be your data)
+            j = 0
+            for i in second_word:
+                image[int(env_a[j])] = np.std(i.x)
+                j += 1
+
+            for i in range(len(image)):
+                if image[i] >= 0.25:
+                    image[i] = 1
+                elif image[i] < 0.25 and image[i] > 0:
+                    image[i] = 2
+
+
+            # Reshape things into a 9x9 grid.
+            image = image.reshape((nrows, ncols))
+
+            dct = {1: 0., 2: 5., 0: 20.}
+            n = [[dct[i] for i in j] for j in image]
+            plt.imshow(n, cmap='brg', vmin=1, vmax=10)
+            plt.savefig('/home/giorg/Documents/plots/map_plot_%i.png' %(n_evals), dpi=300)
+            plt.close
+            ######################################
             np.savetxt('t_size.dat', np.array(n_e))
         if log_file != None:
             fit_list = np.array([x.fitness for x in archive.values()])

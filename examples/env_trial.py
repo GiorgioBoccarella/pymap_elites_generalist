@@ -151,14 +151,44 @@ def plot_best(id_vec):
     plt.show()
 
 
+import matplotlib.pyplot as plt
+from matplotlib import colors
 import numpy as np
-... import matplotlib.pyplot as plt
-... r = np.arange(5)
-... p = np.arange(5)
-... R,P = np.meshgrid(r,p)
-... data = np.random.random((5,5))
-... xx = range(5)
-... yy = range(5)
-... [plt.plot([x,x],[min(yy),max(yy)],color='k') for x in xx]
-... [plt.plot([min(xx),max(xx)],[y,y],color='k') for y in yy]
-... plt.scatter(R[:-1,:-1]+0.5,P[:-1,:-1]+0.5, color = 'blue')
+
+data = np.random.rand(10, 10) * 20
+
+# create discrete colormap
+cmap = colors.ListedColormap(['red', 'blue'])
+bounds = [0,10,20]
+norm = colors.BoundaryNorm(bounds, cmap.N)
+
+fig, ax = plt.subplots()
+ax.imshow(data, cmap=cmap, norm=norm)
+
+# draw gridlines
+ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=2)
+ax.set_xticks(np.arange(-.5, 10, 1));
+ax.set_yticks(np.arange(-.5, 10, 1));
+
+plt.show()
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Make a 9x9 grid...
+nrows, ncols = 4,4
+image = np.zeros(nrows*ncols)
+
+# Set every other cell to a random number (this would be your data)
+for
+
+# Reshape things into a 9x9 grid.
+image = image.reshape((nrows, ncols))
+
+row_labels = range(nrows)
+col_labels = ['1', '2', '3', '4']
+plt.matshow(image)
+plt.xticks(range(ncols), col_labels)
+plt.yticks(range(nrows), row_labels)
+plt.show()

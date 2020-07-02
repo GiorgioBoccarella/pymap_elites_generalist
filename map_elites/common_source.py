@@ -56,7 +56,7 @@ default_params = \
         # proportion of niches to be filled before starting
         "random_init": 0.01,
         # batch for random initialization
-        "random_init_batch": 10,
+        "random_init_batch": 1,
         # when to write results (one generation = one batch)
         "dump_period": 100000,
         # do we use several cores?

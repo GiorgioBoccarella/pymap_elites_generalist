@@ -148,6 +148,7 @@ def mutate(ind):
     z[T_y] += step
     return z
 
+time = 0
 
 def compute(dim_map=-1,
             dim_x=-1,
@@ -255,17 +256,6 @@ def compute(dim_map=-1,
             b_evals = 0
             n_e = [len(v) for v in successes.values()]
             print(n_evals, n_e)
-            #My mod
-            task_tot = np.array(tasks)
-            env_l = list(archive.keys())
-            env_a = np.array(env_l)
-            print(env_a)
-            my_map_h = np.zeros((n_tasks, n_tasks))
-            for i in range(n_tasks):
-                for j in range(n_tasks):
-                    my_map_h[i][j] = distance(task_tot[i], task_tot[j])
-            plot_best(my_map_h, env_a, n_evals)
-            #
             np.savetxt('t_size.dat', np.array(n_e))
         if log_file != None:
             fit_list = np.array([x.fitness for x in archive.values()])
