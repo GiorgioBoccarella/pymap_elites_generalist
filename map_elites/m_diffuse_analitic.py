@@ -59,44 +59,38 @@ def distance(env1, env2):
     return d
 
 
-def add_to_archive(s, archive, d):
-    centroid = cm.make_hashable(s.centroid)
-    if centroid in archive:
-        if s.fitness > archive[centroid].fitness:
-            archive[centroid] = s
-            return 1, d
-        return 0, 0
-    else:
-        archive[centroid] = s
-        return 1, d
+def add_to_archive(ind, env_id, env_list):
+    env_list[env_id] = ind
+
+def fit(ind, env):
+    #np.linalg.norm(ind - env) is the mismatch
+    # The 10 is arbitrary, worst fitness possible is 6.83772..
+    if env[len(env)-1] == 0:
+        s_side = int(len(ind)/2)
+        f_e = env[0:s_side]
+        f_i = ind[0:s_side]
+        f = len(ind) - np.linalg.norm(f_e - f_i)
+    elif env[len(env)-1] == 1:
+        s_side = int(len(ind) / 2)
+        f_e = env[int(s_side):int(len(env) - 1)]
+        f_i = ind[0:s_side]
+        f = len(ind) - np.linalg.norm(f_e - f_i)
+    return f
 
 # evaluate a single vector (z) with a function f and return a species
 # t = vector, function
 def __evaluate(t):
-    z, f, task, centroid, _ = t
-    fit = f(z, task)
-    return cm.Species(z, task, fit, centroid)
+    g, x, y, f, position = t
+    # from position extract environment
+    #fitnes must be += because multiple env
+    fitness = fit(g, env)
+    return cm.Ind(g, x, y, fitness, position)
 
 # bandit opt for optimizing tournament size
 # probability matching / Adaptive pursuit Thierens GECCO 2005
 # UCB: schoenauer / Sebag
 # TODO : params for values, and params for window
-def bandit(successes, n_niches):
-    n = 0
-    for v in successes.values():
-        n += len(v)
-    v = [1, 10, 50, 100, 500]#, 1000]
-    if len(successes.keys()) < len(v):
-        return random.choice(v)
-    ucb = []
-    for k in v:
-        x = [i[0] for i in successes[k]]
-        mean = sum(x) / float(len(x)) # 100 = batch size??
-        n_a = len(x)
-        ucb += [mean +  math.sqrt(2 * math.log(n) / n_a)]
-    a = np.argmax(ucb)
-    t_size = v[a]
-    return t_size
+
 
 # select the niche according to
 def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
@@ -132,19 +126,16 @@ def mutate(ind):
     mu, sigma = 0, 0.1
     step = np.random.normal(mu, sigma, 1)
     z[t_x] += step
-
     return z
 
 
 def compute(dim_map=-1,
             dim_x=-1,
             f=None,
-            max_evals=1e5,
-            centroids=[],
-            tasks=[],
-            variation_operator=cm.variation,
+            end_sim=1e5,
+            envs_list=[],
             params=cm.default_params,
-            sim = 1,
+            sim= 1,
             log_file=None):
     """Multi-task MAP-Elites
     - if there is no centroid : random assignation of niches
@@ -161,58 +152,37 @@ def compute(dim_map=-1,
     print(params)
     assert(f != None)
     assert(dim_x != -1)
-    # handle the arguments
-    use_distance = False
-    if tasks != [] and centroids != []:
-        use_distance = True
-    elif tasks == [] and centroids != []:
-        # if no task, we use the centroids as tasks
-        tasks = centroids
-        use_distance = True
-    elif tasks != [] and centroids == []:
-        # if no centroid, we create indices so that we can index the archive by centroid
-        centroids = np.arange(0, len(tasks)).reshape(len(tasks), 1)
-        use_distance = False
-    else:
-        raise ValueError('Multi-task MAP-Elites: you need to specify a list of task, a list of centroids, or both')
-    print("Multitask-MAP-Elites:: using distance =>", use_distance)
-    assert(len(tasks) == len(centroids))
-    n_tasks = len(tasks)
 
-    # init archive (empty)
-    archive = {}
+    # init archive (empty). Archive here is dictionary of dictionary
+    # Each dictionary is an environment and and in each environments there are several individual
+    envs_list_d = {}
 
+    for x in range(len(envs_list)):
+        y = "env_{0}".format(x)
+        envs_list_d[str(y)] = {}
 
     # init multiprocessing
     num_cores = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_cores)
 
     # main loop
-    n_evals = 0 # number of evaluations
-    b_evals = 0 # number evaluation since the last dump
-    t_size = 1  # size of the tournament (if using distance) [will be selected by the bandit]
-    successes = defaultdict(list) # count the successes
-    while (n_evals < max_evals):
+    gen = 0  # number of generations
+    while (gen < end_sim):
         to_evaluate = []
-        to_evaluate_centroid = []
-        if len(archive) <= params['random_init'] * n_tasks:
+        for e in envs_list_d:
+        if len(e.) <= params['random_init'] * envs_list:
             # initialize the map with random individuals
             for i in range(0, params['random_init_batch']):
                 # create a random individual perfectly specialized to one of the task
-                x = np.random.randint(0, n_tasks)
-                #t = tasks[x]
-                #x = np.asarray(t[0: int(len(tasks[x]) - 1)])
-                x = np.repeat(0.5, int(len(tasks[x]) - 1))
+                x = np.random.randint(0, envs_list)
+                x = np.repeat(0.5, int(len(envs_list[x]) - 1))
                 x = x.astype(float)
                 # we take a random task
-                n = np.random.randint(0, n_tasks)
-                to_evaluate += [(x, f, tasks[n], centroids[n], params)]
-            s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
-            n_evals += len(to_evaluate)
-            b_evals += len(to_evaluate)
-            d = 0
-            for i in range(0, len(list(s_list))):
-                add_to_archive(s_list[i], archive, d)
+                n = np.random.randint(0, envs_list)
+                to_evaluate += [(x, f, envs_list[n], params)]
+            e_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
+            for i in range(0, len(list(e_list))):
+                add_to_archive(e_list[i], archive)
         else:
             # main variation/selection loop
             keys = list(archive.keys())
@@ -293,6 +263,7 @@ def compute(dim_map=-1,
         f.write(str(sim) + ' ')
         f.write("\n")
     return archive
+
 
 
 # a small test
