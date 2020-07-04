@@ -131,3 +131,16 @@ for s in range(0, n_sim):
 
 
 
+def add_to_env(ind_feature, envs_list_d):
+     current_env = list(envs_list_d.items())[0][0]
+     envs_list_d[current_env] = {int(len(list(envs_list_d.items())[0][1])), ind_feature}
+
+for i in range(10):
+    g = np.random.rand(10)
+    g = (g / sum(g)) * ( 10 / 2)
+    x = 0
+    y = 0
+    f = 0
+    position = 1
+    ind_feature = [g, x, y, f, position]
+    add_to_env(ind_feature, envs_list_d)

@@ -54,7 +54,7 @@ default_params = \
         # we evaluate in batches to paralleliez
         "batch_size": 100,
         # proportion of niches to be filled before starting
-        "random_init": 0.01,
+        "random_init": 0.1,
         # batch for random initialization
         "random_init_batch": 1,
         # when to write results (one generation = one batch)

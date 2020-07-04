@@ -49,9 +49,12 @@ from collections import defaultdict
 from sklearn.neighbors import KDTree
 from scipy.spatial import distance
 import matplotlib.pyplot as plt
-import seaborn as sns
+import collections
 
-from map_elites import common_source as cm
+def makehash():
+    return collections.defaultdict(makehash)
+
+from map_elites import common_new as cm
 
 
 def distance(env1, env2):
@@ -59,8 +62,6 @@ def distance(env1, env2):
     return d
 
 
-def add_to_archive(ind, env_id, env_list):
-    env_list[env_id] = ind
 
 def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
@@ -79,17 +80,10 @@ def fit(ind, env):
 
 # evaluate a single vector (z) with a function f and return a species
 # t = vector, function
-def __evaluate(t):
+def make_ind(t):
     g, x, y, f, position = t
-    # from position extract environment
-    #fitnes must be += because multiple env
-    fitness = fit(g, env)
-    return cm.Ind(g, x, y, fitness, position)
+    return cm.Ind(g, x, y, f, position)
 
-# bandit opt for optimizing tournament size
-# probability matching / Adaptive pursuit Thierens GECCO 2005
-# UCB: schoenauer / Sebag
-# TODO : params for values, and params for window
 
 
 # select the niche according to
@@ -117,6 +111,7 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
         to_evaluate += [(z, f, niches_tasks[cd_min], niches_centroids[cd_min], params)]
     return to_evaluate, d
 
+
 def mutate(ind):
     z = ind.copy()
     # select a random trait
@@ -135,7 +130,8 @@ def compute(dim_map=-1,
             end_sim=1e5,
             envs_list=[],
             params=cm.default_params,
-            sim= 1,
+            sim=1,
+            N=100,
             log_file=None):
     """Multi-task MAP-Elites
     - if there is no centroid : random assignation of niches
@@ -153,36 +149,28 @@ def compute(dim_map=-1,
     assert(f != None)
     assert(dim_x != -1)
 
-    # init archive (empty). Archive here is dictionary of dictionary
-    # Each dictionary is an environment and and in each environments there are several individual
-    envs_list_d = {}
+    envs_list_d = makehash()
 
-    for x in range(len(envs_list)):
-        y = "env_{0}".format(x)
-        envs_list_d[str(y)] = {}
-
-    # init multiprocessing
-    num_cores = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(num_cores)
 
     # main loop
     gen = 0  # number of generations
+    initialize = 0
+
     while (gen < end_sim):
-        to_evaluate = []
-        for e in envs_list_d:
-        if len(e.) <= params['random_init'] * envs_list:
-            # initialize the map with random individuals
-            for i in range(0, params['random_init_batch']):
-                # create a random individual perfectly specialized to one of the task
-                x = np.random.randint(0, envs_list)
-                x = np.repeat(0.5, int(len(envs_list[x]) - 1))
-                x = x.astype(float)
-                # we take a random task
-                n = np.random.randint(0, envs_list)
-                to_evaluate += [(x, f, envs_list[n], params)]
-            e_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
-            for i in range(0, len(list(e_list))):
-                add_to_archive(e_list[i], archive)
+        if initialize < 1:
+            for i in range(len(envs_list)):
+                for j in range(params['random_init'] * N):
+                    g = np.random.rand(dim_x)
+                    g = (g / sum(g)) * (dim_x / 2)
+                    x = 0
+                    y = 0
+                    position = i
+                    fitness = fit(g, envs_list[position])
+                    ind_feature = [g, x, y, position]
+                    id = make_ind(ind_feature)
+                    env_id = "env_{0}".format(i)
+                    envs_list_d[str(env_id)][fitness] = id
+                    initialize = 1
         else:
             # main variation/selection loop
             keys = list(archive.keys())
@@ -195,7 +183,6 @@ def compute(dim_map=-1,
                 z = mutate(x.x)
                 # different modes for multi-task (to select the niche)
                 to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)[0]
-                d = select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)[1]
             # parallel evaluation of the fitness
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
