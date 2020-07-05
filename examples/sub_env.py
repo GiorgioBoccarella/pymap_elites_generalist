@@ -46,27 +46,24 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import map_elites.m_diffuse_analitic as mt_map_elites
-import map_elites.common_source as cm_map_elites
+import map_elites.common_new as cm_map_elites
 
 
-def fitness(ind, env):
+def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
     if env[len(env)-1] == 0:
         s_side = int(len(ind)/2)
         f_e = env[0:s_side]
         f_i = ind[0:s_side]
-        f = len(ind) - np.linalg.norm(f_e - f_i)
+        f = 2 - np.linalg.norm(f_i - f_e)
     elif env[len(env)-1] == 1:
         s_side = int(len(ind) / 2)
         f_e = env[int(s_side):int(len(env) - 1)]
         f_i = ind[0:s_side]
-        f = len(ind) - np.linalg.norm(f_e - f_i)
+        f = 2 - np.linalg.norm(f_i - f_e)
     return f
 
-def distance(env1, env2):
-    d = np.linalg.norm(env1 - env2)
-    return d
 
 def half_sum(sequence):
     sequence = np.array(sequence)
@@ -120,27 +117,9 @@ env_list = [i for i in env_list if half_sum(i) == 0]
 
 env_list = subset_env(env_list)
 
-dim_x = n
-
 n_sim = 1
 
 for s in range(0, n_sim):
-    archive = mt_map_elites.compute(dim_x=dim_x, f=fitness, tasks=env_list, max_evals=1e5, params=px, sim=n_sim,
-                                    log_file=open('mt_no_dist.dat', 'w'))
+    archive = mt_map_elites.compute(dim_x=8, f=fit, tasks=env_list, end_sim=1e5, params=px, sim=n_sim)
     print(s)
 
-
-
-def add_to_env(ind_feature, envs_list_d):
-     current_env = list(envs_list_d.items())[0][0]
-     envs_list_d[current_env] = {int(len(list(envs_list_d.items())[0][1])), ind_feature}
-
-for i in range(10):
-    g = np.random.rand(10)
-    g = (g / sum(g)) * ( 10 / 2)
-    x = 0
-    y = 0
-    f = 0
-    position = 1
-    ind_feature = [g, x, y, f, position]
-    add_to_env(ind_feature, envs_list_d)

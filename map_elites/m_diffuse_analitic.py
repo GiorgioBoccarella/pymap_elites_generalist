@@ -70,12 +70,12 @@ def fit(ind, env):
         s_side = int(len(ind)/2)
         f_e = env[0:s_side]
         f_i = ind[0:s_side]
-        f = len(ind) - np.linalg.norm(f_e - f_i)
+        f = 10 - np.linalg.norm(f_i - f_e)
     elif env[len(env)-1] == 1:
         s_side = int(len(ind) / 2)
         f_e = env[int(s_side):int(len(env) - 1)]
         f_i = ind[0:s_side]
-        f = len(ind) - np.linalg.norm(f_e - f_i)
+        f = 10 - np.linalg.norm(f_i - f_e)
     return f
 
 # evaluate a single vector (z) with a function f and return a species
@@ -115,20 +115,31 @@ def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
 def mutate(ind):
     z = ind.copy()
     # select a random trait
-    for i in range(0, 100):
-        t_x = random.randint(0, len(ind) - 1)
+    t_x = random.randint(0, len(ind) - 1)
 
-    mu, sigma = 0, 0.1
+    mu, sigma = 0, 0.05
     step = np.random.normal(mu, sigma, 1)
     z[t_x] += step
     return z
+
+def weighted_random_choice(w_env):
+    sum_f = 0
+    for idx in w_env.values():
+        sum_f += idx.fitness
+    pick = random.uniform(0, sum_f)
+    current = 0
+    for key, value in w_env.items():
+        current += value.fitness
+        if current > pick:
+            return key
 
 
 def compute(dim_map=-1,
             dim_x=-1,
             f=None,
-            end_sim=1e5,
-            envs_list=[],
+            end_sim=1e4,
+            env_list=[],
+            tasks = [],
             params=cm.default_params,
             sim=1,
             N=100,
@@ -149,118 +160,66 @@ def compute(dim_map=-1,
     assert(f != None)
     assert(dim_x != -1)
 
-    envs_list_d = makehash()
+    env_list = tasks
+    env_list_d = makehash()
 
 
     # main loop
     gen = 0  # number of generations
     initialize = 0
+    dim_x = 8
 
     while (gen < end_sim):
+        # Initialize the 4 environments with 10 individuals
         if initialize < 1:
-            for i in range(len(envs_list)):
-                for j in range(params['random_init'] * N):
+            for i in range(len(env_list)):
+                #for j in range(params['random_init'] * N):
+                for j in range(100):
                     g = np.random.rand(dim_x)
                     g = (g / sum(g)) * (dim_x / 2)
-                    x = 0
-                    y = 0
+                    x, y, f = 0, 0, 0
                     position = i
-                    fitness = fit(g, envs_list[position])
-                    ind_feature = [g, x, y, position]
+                    ind_feature = [g, x, y, f, position]
                     id = make_ind(ind_feature)
                     env_id = "env_{0}".format(i)
-                    envs_list_d[str(env_id)][fitness] = id
+                    env_list_d[str(env_id)][j] = id
                     initialize = 1
         else:
-            # main variation/selection loop
-            keys = list(archive.keys())
-            # we do all the randint together because randint is slow
-            rand1 = np.random.randint(len(keys), size=params['batch_size'])
-            for n in range(0, params['batch_size']):
-                # ind selection
-                x = archive[keys[rand1[n]]]
-                # add variation
-                z = mutate(x.x)
-                # different modes for multi-task (to select the niche)
-                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)[0]
-            # parallel evaluation of the fitness
-            s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
-            n_evals += len(to_evaluate)
-            b_evals += len(to_evaluate)
-            # natural selection
-            suc = 0
-            for i in range(0, len(list(s_list))):
-                suc += add_to_archive(s_list[i], archive, d)[0]
-                d += add_to_archive(s_list[i], archive, d)[1]
-            if use_distance:
-                successes[t_size] += [(suc, n_evals)]
-        if use_distance: # call the bandit to optimize t_size
-            t_size = bandit(successes, n_tasks)
+        # If some individual exist then:
+        # Calculate fitness for every id in every environment
+            for i in env_list_d:
+                for j in env_list_d[i]:
+                    ind = env_list_d[i][j]
+                    ind.fitness = fit(ind.genome, env_list[int(ind.position)])
+            # Selection and reproduction loop
+            tmp = env_list_d.copy()
+            for i in env_list_d:
+                for j in range(len(env_list_d[i])):
+                    tmp[i][j] = env_list_d[i][weighted_random_choice(env_list_d[i])]
+            env_list_d = tmp
+            # Variation loop
+            # 10% of population mutate
+            p_m = 0.001
+            for i in env_list_d:
+                for j in env_list_d[i].values():
+                    mu = np.random.binomial(1, p_m)
+                    if mu > 0:
+                        j.genome = mutate(j.genome)
+                    else:
+                        continue
 
-        # write archive
-        if params['dump_period'] != -1 and b_evals > params['dump_period']:
-            cm.__save_archive(archive, n_evals, sim)
-            b_evals = 0
-            n_e = [len(v) for v in successes.values()]
-            print(n_evals, n_e)
-            env_l = list(archive.keys())
-            env_a = np.array(env_l)
-            keys_a = archive.keys()
-            second_word = [archive[x] for x in keys_a]
-            #for i in second_word:
-            #   print(i.x)
+            filename = '/home/giorg/Documents/results/sim_' + str(sim) + '.dat'
+            for i in env_list_d:
+                average_f = 0
+                for idx in env_list_d[i].values():
+                    average_f += idx.fitness
+                with open(filename, 'a+') as f:
+                    f.write(str(i))
+                    f.write(" ,")
+                    f.write(str(average_f))
+                    f.write(" ,")
+                    f.write(str(gen))
+                    f.write("\n")
 
-            #vals = np.fromiter(archive.items().x, dtype=float)
-            ###################################################### My mod
-            env_l = list(archive.keys())
-            env_a = np.array(env_l)
-            nrows, ncols = 6, 6
-            image = np.zeros(nrows * ncols)
-
-            # Set every other cell to a random number (this would be your data)
-            j = 0
-            for i in second_word:
-                image[int(env_a[j])] = np.std(i.x)
-                j += 1
-
-            for i in range(len(image)):
-                if image[i] >= 0.25:
-                    image[i] = 1
-                elif image[i] < 0.25 and image[i] > 0:
-                    image[i] = 2
-
-
-            # Reshape things into a 9x9 grid.
-            image = image.reshape((nrows, ncols))
-
-            dct = {1: 0., 2: 5., 0: 20.}
-            n = [[dct[i] for i in j] for j in image]
-            plt.imshow(n, cmap='brg', vmin=1, vmax=10)
-            plt.savefig('/home/giorg/Documents/plots/map_plot_%i.png' %(n_evals), dpi=300)
-            plt.close
-            ######################################
-            np.savetxt('t_size.dat', np.array(n_e))
-        if log_file != None:
-            fit_list = np.array([x.fitness for x in archive.values()])
-            log_file.write("{} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()), fit_list.max(), np.mean(fit_list), np.median(fit_list), np.percentile(fit_list, 5), np.percentile(fit_list, 95)))
-            log_file.flush()
-    cm.__save_archive(archive, n_evals, sim)
-    filename_dtot = '/home/giorg/Documents/results/archive_sim_dtot_s_' + '.dat'
-    with open(filename_dtot, 'a+') as f:
-        f.write(str(sim) + ' ')
-        f.write("\n")
-    return archive
-
-
-
-# a small test
-if __name__ == "__main__":
-    def rastrigin(xx):
-        x = xx * 10.0 - 5.0
-        f = 10 * x.shape[0]
-        for i in range(0, x.shape[0]):
-            f += x[i] * x[i] - 10 * math.cos(2 * math.pi * x[i])
-        return -f, np.array([xx[0], xx[1]])
-    # CVT-based version
-    my_map = compute(dim_map=2, dim_x = 10, n_niches=1500, f=rastrigin)
+            gen += 1
 
