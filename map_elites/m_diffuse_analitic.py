@@ -62,22 +62,6 @@ def distance(env1, env2):
     return d
 
 
-
-def fit(ind, env):
-    #np.linalg.norm(ind - env) is the mismatch
-    # The 10 is arbitrary, worst fitness possible is 6.83772..
-    if env[len(env)-1] == 0:
-        s_side = int(len(ind)/2)
-        f_e = env[0:s_side]
-        f_i = ind[0:s_side]
-        f = 10 - np.linalg.norm(f_i - f_e)
-    elif env[len(env)-1] == 1:
-        s_side = int(len(ind) / 2)
-        f_e = env[int(s_side):int(len(env) - 1)]
-        f_i = ind[0:s_side]
-        f = 10 - np.linalg.norm(f_i - f_e)
-    return f
-
 # evaluate a single vector (z) with a function f and return a species
 # t = vector, function
 def make_ind(t):
@@ -85,42 +69,24 @@ def make_ind(t):
     return cm.Ind(g, x, y, f, position)
 
 
-
-# select the niche according to
-def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
-    to_evaluate = []
-    if not use_distance:
-        # No distance: evaluate on a random niche
-        niche = np.random.randint(len(tasks))
-        s_niche = tasks[niche]
-        d = distance(s_niche[0:int(len(s_niche) - 1)], z)
-        to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
-    else:
-        # we select the parent (a single one), then we select the niche
-        # with a tournament based on the task distance
-        # the size of the tournament depends on the bandit algorithm
-        niches_centroids = []
-        niches_tasks = [] # TODO : use a kd-tree
-        rand = np.random.randint(centroids.shape[0], size=t_size)
-        for p in range(0, t_size):
-            n = rand[p]
-            niches_centroids += [centroids[n, :]]
-            niches_tasks += [tasks[n]]
-        cd = distance.cdist(niches_centroids, [x.centroid], 'euclidean')
-        cd_min = np.argmin(cd)
-        to_evaluate += [(z, f, niches_tasks[cd_min], niches_centroids[cd_min], params)]
-    return to_evaluate, d
-
-
 def mutate(ind):
     z = ind.copy()
     # select a random trait
-    t_x = random.randint(0, len(ind) - 1)
+    for i in range(0, 100):
+        T_x = random.randint(0, len(ind) - 1)
+    # select a random trait different from previous one
+        T_y = random.choice([i for i in range(0, len(ind)) if i != T_x])
+        step = min(ind[T_x], (-ind[T_y] + 1))
+        if step > 0.1:
+            step = 0.1
+            break
+        else:
+            continue
 
-    mu, sigma = 0, 0.05
-    step = np.random.normal(mu, sigma, 1)
-    z[t_x] += step
+    z[T_x] -= step
+    z[T_y] += step
     return z
+
 
 def weighted_random_choice(w_env):
     sum_f = 0
@@ -129,17 +95,16 @@ def weighted_random_choice(w_env):
     pick = random.uniform(0, sum_f)
     current = 0
     for key, value in w_env.items():
-        current += value.fitness
-        if current > pick:
+        pick -= value.fitness
+        if pick <= 0:
             return key
 
 
 def compute(dim_map=-1,
             dim_x=-1,
             f=None,
-            end_sim=1e4,
-            env_list=[],
-            tasks = [],
+            end_sim=1e3,
+            tasks=[],
             params=cm.default_params,
             sim=1,
             N=100,
@@ -156,30 +121,30 @@ def compute(dim_map=-1,
     Mouret and Maguire (2020). Quality Diversity for Multitask Optimization
     Proceedings of ACM GECCO.
     """
-    print(params)
+    #print(params)
     assert(f != None)
     assert(dim_x != -1)
 
     env_list = tasks
     env_list_d = makehash()
 
+    N = 500
 
     # main loop
     gen = 0  # number of generations
     initialize = 0
-    dim_x = 8
 
     while (gen < end_sim):
         # Initialize the 4 environments with 10 individuals
         if initialize < 1:
             for i in range(len(env_list)):
                 #for j in range(params['random_init'] * N):
-                for j in range(100):
+                for j in range(N):
                     g = np.random.rand(dim_x)
                     g = (g / sum(g)) * (dim_x / 2)
-                    x, y, f = 0, 0, 0
+                    x, y, fit = 0, 0, 0
                     position = i
-                    ind_feature = [g, x, y, f, position]
+                    ind_feature = [g, x, y, fit, position]
                     id = make_ind(ind_feature)
                     env_id = "env_{0}".format(i)
                     env_list_d[str(env_id)][j] = id
@@ -190,7 +155,7 @@ def compute(dim_map=-1,
             for i in env_list_d:
                 for j in env_list_d[i]:
                     ind = env_list_d[i][j]
-                    ind.fitness = fit(ind.genome, env_list[int(ind.position)])
+                    ind.fitness = f(ind.genome, env_list[int(ind.position)])
             # Selection and reproduction loop
             tmp = env_list_d.copy()
             for i in env_list_d:
@@ -199,7 +164,7 @@ def compute(dim_map=-1,
             env_list_d = tmp
             # Variation loop
             # 10% of population mutate
-            p_m = 0.001
+            p_m = 0.1
             for i in env_list_d:
                 for j in env_list_d[i].values():
                     mu = np.random.binomial(1, p_m)
@@ -213,13 +178,12 @@ def compute(dim_map=-1,
                 average_f = 0
                 for idx in env_list_d[i].values():
                     average_f += idx.fitness
-                with open(filename, 'a+') as f:
-                    f.write(str(i))
-                    f.write(" ,")
-                    f.write(str(average_f))
-                    f.write(" ,")
-                    f.write(str(gen))
-                    f.write("\n")
+                with open(filename, 'a+') as fl:
+                    fl.write(str(i))
+                    fl.write(" ,")
+                    fl.write(str(average_f))
+                    fl.write(" ,")
+                    fl.write(str(gen))
+                    fl.write("\n")
 
-            gen += 1
-
+        gen += 1

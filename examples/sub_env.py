@@ -52,18 +52,9 @@ import map_elites.common_new as cm_map_elites
 def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
-    if env[len(env)-1] == 0:
-        s_side = int(len(ind)/2)
-        f_e = env[0:s_side]
-        f_i = ind[0:s_side]
-        f = 2 - np.linalg.norm(f_i - f_e)
-    elif env[len(env)-1] == 1:
-        s_side = int(len(ind) / 2)
-        f_e = env[int(s_side):int(len(env) - 1)]
-        f_i = ind[0:s_side]
-        f = 2 - np.linalg.norm(f_i - f_e)
+    f = 4 - np.linalg.norm(ind - env)
+    f = np.exp(f)
     return f
-
 
 def half_sum(sequence):
     sequence = np.array(sequence)
@@ -96,9 +87,6 @@ def subset_env(env):
 
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
-px["dump_period"] = 1000
-px["parallel"] = True
-px["batch_size"] = 10
 
 
 #Generate environements
@@ -112,14 +100,10 @@ for i in range(len(env_list)):
 #Every environment sum is == constant n/2
 env_list = [i for i in env_list if sum(i) == n/2]
 
-#if we split the sequence in half we have the same sum
-env_list = [i for i in env_list if half_sum(i) == 0]
-
-env_list = subset_env(env_list)
 
 n_sim = 1
 
 for s in range(0, n_sim):
-    archive = mt_map_elites.compute(dim_x=8, f=fit, tasks=env_list, end_sim=1e5, params=px, sim=n_sim)
+    archive = mt_map_elites.compute(dim_x=4, f=fit, tasks=env_list, end_sim=2e4, params=px, sim=n_sim)
     print(s)
 

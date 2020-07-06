@@ -52,16 +52,18 @@ def add_to_env(ind_feature, envs_list_d):
 def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
-    if env[len(env)-1] == 0:
+    if env[-1] == 0:
         s_side = int(len(ind)/2)
         f_e = env[0:s_side]
         f_i = ind[0:s_side]
-        f = 2 - np.linalg.norm(f_i - f_e)
-    elif env[len(env)-1] == 1:
+        f = 2.01 - np.linalg.norm(f_i - f_e)
+        f = np.exp(f)
+    elif env[-1] == 1:
         s_side = int(len(ind) / 2)
         f_e = env[int(s_side):int(len(env) - 1)]
-        f_i = ind[0:s_side]
-        f = 2 - np.linalg.norm(f_i - f_e)
+        f_i = ind[s_side:]
+        f = 2.01 - np.linalg.norm(f_i - f_e)
+        f = np.exp(f)
     return f
 
 
