@@ -127,3 +127,9 @@ def weighted_random_choice(w_env):
         current += value.fitness
         if current > pick:
             return key
+
+
+pop = [[1, 1], [0, 1], [0, 0], [0, 0]]
+for individual in pop:                             # iterate over population
+    individual[random.randint(0, len(individual)-1)] ^= 1
+

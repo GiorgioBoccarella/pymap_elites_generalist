@@ -40,6 +40,7 @@
 
 import math
 import numpy as np
+import random
 import sys
 
 import sys, os
@@ -48,7 +49,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import map_elites.m_diffuse_analitic as mt_map_elites
 import map_elites.common_new as cm_map_elites
 
-
+#Fintess function to fix on all plastic trait
 def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
@@ -56,54 +57,24 @@ def fit(ind, env):
     f = np.exp(f)
     return f
 
-def half_sum(sequence):
-    sequence = np.array(sequence)
-
-    n = len(sequence)
-    x = sequence[:int((n/2))]
-    y = sequence[int(-(n/2)):]
-    diff = sum(x - y)
-
-    return diff
-
-
-def subset_env(env):
-
-    half = env[0:int(len(env)/2)]
-    s_half = env[int(len(env)/2):int(len(env))]
-
-    sum_env_1 = np.concatenate((half, s_half), axis=1)
-    sum_env_2 = np.concatenate((half, s_half), axis=1)
-
-    f = np.repeat(1, len(sum_env_1))
-    s = np.repeat(0, len(sum_env_1))
-
-    sum_env_1 = np.column_stack((sum_env_1, f))
-    sum_env_2 = np.column_stack((sum_env_2, s))
-
-    env_list_n = np.vstack((sum_env_1, sum_env_2))
-
-    return env_list_n
-
 # dim_map, dim_x, function
 px = cm_map_elites.default_params.copy()
 
 
-#Generate environements
+#Generate all possible combination
 # 10 bits = 1024 env
-n = 4
-env_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
-
+n = 2
+seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 #From string to binary
-for i in range(len(env_list)):
-    env_list[i] = [int(numeric_string) for numeric_string in env_list[i]]
-#Every environment sum is == constant n/2
-env_list = [i for i in env_list if sum(i) == n/2]
+for i in range(len(seq_list)):
+    seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
+
 
 
 n_sim = 1
-
+#Env params is the centroid
 for s in range(0, n_sim):
-    archive = mt_map_elites.compute(dim_x=4, f=fit, tasks=env_list, end_sim=2e4, params=px, sim=n_sim)
+    archive = mt_map_elites.compute(dim_x=4, f=fit, env=env_list, k=2, env_params=[],
+                                    seq_list=seq_list, end_sim=2e4, params=px, sim=n_sim)
     print(s)
 

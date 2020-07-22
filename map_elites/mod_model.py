@@ -51,6 +51,17 @@ from scipy.spatial import distance
 
 from map_elites import common as cm
 
+def generate_genome(sequences, k):
+    assert(len(sequences) >= k)
+    l = len(sequences[0])
+    g = np.empty([k, l], dtype=bool)
+    sel_id = np.random.choice(len(sequences), k, replace=False)
+    j = 0
+    for seq in sel_id:
+        g[j] = sequences[seq]
+        j += 1
+    return g
+
 
 def add_to_archive(s, archive):
     centroid = cm.make_hashable(s.centroid)
@@ -92,64 +103,41 @@ def bandit(successes, n_niches):
     return t_size
 
 # select the niche according to
-def select_niche(x, z, f, centroids, tasks, t_size, params, use_distance=False):
+def select_niche(x, z, f, env_param, tasks, t_size, params, use_distance=False):
     to_evaluate = []
     if not use_distance:
         # No distance: evaluate on a random niche
         niche = np.random.randint(len(tasks))
-        to_evaluate += [(z, f, tasks[niche], centroids[niche, :], params)]
+        to_evaluate += [(z, f, tasks[niche], env_param[niche, :], params)]
     else:
         # we select the parent (a single one), then we select the niche
         # with a tournament based on the task distance
         # the size of the tournament depends on the bandit algorithm
-        niches_centroids = []
+        niches_env_param = []
         niches_tasks = [] # TODO : use a kd-tree
-        rand = np.random.randint(centroids.shape[0], size=t_size)
+        rand = np.random.randint(env_param.shape[0], size=t_size)
         for p in range(0, t_size):
             n = rand[p]
-            niches_centroids += [centroids[n, :]]
+            niches_env_param += [env_param[n, :]]
             niches_tasks += [tasks[n]]
-        cd = distance.cdist(niches_centroids, [x.centroid], 'euclidean')
+        cd = distance.cdist(niches_env_param, [x.centroid], 'euclidean')
         cd_min = np.argmin(cd)
-        to_evaluate += [(z, f, niches_tasks[cd_min], niches_centroids[cd_min], params)]
+        to_evaluate += [(z, f, niches_tasks[cd_min], niches_env_param[cd_min], params)]
     return to_evaluate
-
-def mutate(ind):
-    z = ind.copy()
-    # select a random trait
-    for i in range(0, 100):
-        T_x = random.randint(0, len(ind) - 1)
-    # select a random trait different from previous one
-        T_y = random.choice([i for i in range(0, 10) if i != T_x])
-        step = min(ind[T_x], (-ind[T_y] + 1))
-        if step > 0.1:
-            step = 0.1
-            break
-        else:
-            continue
-
-    z[T_x] -= step
-    z[T_y] += step
-    return z
 
 
 def compute(dim_map=-1,
             dim_x=-1,
             f=None,
             max_evals=1e5,
-            centroids=[],
-            tasks=[],
+            env_params=[],
+            k=2,
+            env=[],
+            seq_list=[],
             variation_operator=cm.variation,
             params=cm.default_params,
             log_file=None):
     """Multi-task MAP-Elites
-    - if there is no centroid : random assignation of niches
-    - if there is no task: use the centroids as tasks
-    - if there is a centroid list: use the centroids to compute distances
-    when using the distance, use the bandit to select the tournament size (cf paper):
-
-    Format of the logfile: evals archive_size max mean 5%_percentile, 95%_percentile
-
     Reference:
     Mouret and Maguire (2020). Quality Diversity for Multitask Optimization
     Proceedings of ACM GECCO.
@@ -157,23 +145,19 @@ def compute(dim_map=-1,
     print(params)
     assert(f != None)
     assert(dim_x != -1)
-    # handle the arguments
-    use_distance = False
-    if tasks != [] and centroids != []:
-        use_distance = True
-    elif tasks == [] and centroids != []:
-        # if no task, we use the centroids as tasks
-        tasks = centroids
-        use_distance = True
-    elif tasks != [] and centroids == []:
+
+    if env != [] and env_params == []:
         # if no centroid, we create indices so that we can index the archive by centroid
-        centroids = np.arange(0, len(tasks)).reshape(len(tasks), 1)
+        env_param = np.arange(0, len(env)).reshape(len(env), 1)
         use_distance = False
     else:
-        raise ValueError('Multi-task MAP-Elites: you need to specify a list of task, a list of centroids, or both')
+        raise ValueError('Multi-task MAP-Elites: you need to specify a list of env, a list of env_param, or both')
     print("Multitask-MAP-Elites:: using distance =>", use_distance)
-    assert(len(tasks) == len(centroids))
-    n_tasks = len(tasks)
+
+    assert(len(seq_list) == len(env_param))
+    assert (len(seq_list) >= k)
+    n_env = len(env)
+    seq_list = seq_list
 
     # init archive (empty)
     archive = {}
@@ -192,16 +176,12 @@ def compute(dim_map=-1,
     while (n_evals < max_evals):
         to_evaluate = []
         to_evaluate_centroid = []
-        if len(archive) <= params['random_init'] * n_tasks:
-            # initialize the map with random individuals
-            for i in range(0, params['random_init_batch']):
-                # create a random individual perfectly specialized to one of the task
-                x = np.random.randint(0, n_tasks)
-                x = np.asarray(tasks[x])
-                x = x.astype(float)
-                # we take a random task
-                n = np.random.randint(0, n_tasks)
-                to_evaluate += [(x, f, tasks[n], centroids[n], params)]
+        #If environemnt is empty fill with random individual
+        if len(archive) <= len(n_env):
+            g = generate_genome(seq_list, k)
+            # we take a random env
+            n = np.random.randint(0, n_env)
+            to_evaluate += [(g, f, env[n], env_param[n], params)]
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
             b_evals += len(to_evaluate)
@@ -212,13 +192,15 @@ def compute(dim_map=-1,
             keys = list(archive.keys())
             # we do all the randint together because randint is slow
             rand1 = np.random.randint(len(keys), size=params['batch_size'])
+            rand2 = np.random.randint(len(keys), size=params['batch_size'])
             for n in range(0, params['batch_size']):
-                # ind selection
+                # parent selection
                 x = archive[keys[rand1[n]]]
-                # add variation
-                z = mutate(x.x)
+                y = archive[keys[rand2[n]]]
+                # copy & add variation
+                z = variation_operator(x.x, y.x, params)
                 # different modes for multi-task (to select the niche)
-                to_evaluate += select_niche(x, z, f, centroids, tasks, t_size, params, use_distance)
+                to_evaluate += select_niche(x, z, f, env_param, tasks, t_size, params, use_distance)
             # parallel evaluation of the fitness
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
@@ -257,4 +239,3 @@ if __name__ == "__main__":
         return -f, np.array([xx[0], xx[1]])
     # CVT-based version
     my_map = compute(dim_map=2, dim_x = 10, n_niches=1500, f=rastrigin)
-
