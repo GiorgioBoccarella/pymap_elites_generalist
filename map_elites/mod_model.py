@@ -49,7 +49,7 @@ from collections import defaultdict
 from sklearn.neighbors import KDTree
 from scipy.spatial import distance
 
-from map_elites import common as cm
+from map_elites import common_new as cm
 
 def generate_genome(sequences, k):
     assert(len(sequences) >= k)
@@ -62,24 +62,39 @@ def generate_genome(sequences, k):
         j += 1
     return g
 
+def mutate_g(genome):
+    ran1 = np.random.randint(0, len(genome))
+    s_genome = genome[ran1]
+    all_mut = np.tile(s_genome, (len(s_genome) - 1, 1))
+
+    print()
+    print(s_genome)
+    print()
+
+    for t in range(0, len(s_genome) - 1):
+        all_mut[t][t] ^= 1
+
+    print(all_mut)
 
 def add_to_archive(s, archive):
-    centroid = cm.make_hashable(s.centroid)
-    if centroid in archive:
-        if s.fitness > archive[centroid].fitness:
-            archive[centroid] = s
+    position = cm.make_hashable(s.position)
+    if position in archive:
+        if s.fitness > archive[position].fitness:
+            archive[position] = s
+            #If succesful invasion of mutant add this to the trajectory
+            archive[position].trajectory = np.append(archive[position].trajectory, archive[position].position)
             return 1
         return 0
     else:
-        archive[centroid] = s
+        archive[position] = s
         return 1
 
 # evaluate a single vector (z) with a function f and return a species
 # t = vector, function
 def __evaluate(t):
-    z, f, task, centroid, _ = t
-    fit = f(z, task)
-    return cm.Species(z, task, fit, centroid)
+    g, trj, env, f, pos, _ = t
+    fit = f(g, env)
+    return cm.Ind(g, trj, env, fit, pos)
 
 # bandit opt for optimizing tournament size
 # probability matching / Adaptive pursuit Thierens GECCO 2005
@@ -132,7 +147,7 @@ def compute(dim_map=-1,
             max_evals=1e5,
             env_params=[],
             k=2,
-            env=[],
+            env_list=[],
             seq_list=[],
             variation_operator=cm.variation,
             params=cm.default_params,
@@ -146,9 +161,9 @@ def compute(dim_map=-1,
     assert(f != None)
     assert(dim_x != -1)
 
-    if env != [] and env_params == []:
+    if env_list != [] and env_params == []:
         # if no centroid, we create indices so that we can index the archive by centroid
-        env_param = np.arange(0, len(env)).reshape(len(env), 1)
+        env_param = np.arange(0, len(env_list)).reshape(len(env_list), 1)
         use_distance = False
     else:
         raise ValueError('Multi-task MAP-Elites: you need to specify a list of env, a list of env_param, or both')
@@ -156,7 +171,7 @@ def compute(dim_map=-1,
 
     assert(len(seq_list) == len(env_param))
     assert (len(seq_list) >= k)
-    n_env = len(env)
+    n_env = len(env_list)
     seq_list = seq_list
 
     # init archive (empty)
@@ -176,12 +191,14 @@ def compute(dim_map=-1,
     while (n_evals < max_evals):
         to_evaluate = []
         to_evaluate_centroid = []
-        #If environemnt is empty fill with random individual
+        #If environemnt is empty fill with random individuals
         if len(archive) <= len(n_env):
             g = generate_genome(seq_list, k)
             # we take a random env
             n = np.random.randint(0, n_env)
-            to_evaluate += [(g, f, env[n], env_param[n], params)]
+            #Trajectory is initially 0
+            trj = np.empty([0])
+            to_evaluate += [(g, f, trj, env_list[n], env_param[n], params)]
             s_list = cm.parallel_eval(__evaluate, to_evaluate, pool, params)
             n_evals += len(to_evaluate)
             b_evals += len(to_evaluate)
@@ -190,13 +207,10 @@ def compute(dim_map=-1,
         else:
             # main variation/selection loop
             keys = list(archive.keys())
-            # we do all the randint together because randint is slow
-            rand1 = np.random.randint(len(keys), size=params['batch_size'])
-            rand2 = np.random.randint(len(keys), size=params['batch_size'])
-            for n in range(0, params['batch_size']):
-                # parent selection
+            rand1 = np.random.randint(len(keys))
+            for n in range(0, len(keys)):
+                # ind selection
                 x = archive[keys[rand1[n]]]
-                y = archive[keys[rand2[n]]]
                 # copy & add variation
                 z = variation_operator(x.x, y.x, params)
                 # different modes for multi-task (to select the niche)

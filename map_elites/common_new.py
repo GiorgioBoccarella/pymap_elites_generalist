@@ -72,10 +72,10 @@ default_params = \
     }
 
 class Ind:
-    def __init__(self, genome, trait_x, trait_y, fitness, position=None):
+    def __init__(self, genome, trajectory, env, fitness, position=None):
         self.genome = genome
-        self.trait_x = trait_x
-        self.trait_y = trait_y
+        self.trajectory = trajectory
+        self.env = env
         self.fitness = fitness
         self.position = position
 
@@ -86,6 +86,12 @@ class Ind:
 def make_hashable(array):
     return tuple(map(float, array))
 
+def parallel_eval(evaluate_function, to_evaluate, pool, params):
+    if params['parallel'] == True:
+        s_list = pool.map(evaluate_function, to_evaluate)
+    else:
+        s_list = map(evaluate_function, to_evaluate)
+    return list(s_list)
 
 
 

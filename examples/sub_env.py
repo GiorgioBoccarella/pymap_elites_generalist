@@ -46,10 +46,11 @@ import sys
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.m_diffuse_analitic as mt_map_elites
+import map_elites.mod_model as mt_map_elites
 import map_elites.common_new as cm_map_elites
+import map_elites.l
 
-#Fintess function to fix on all plastic trait
+#TODO Fintess function to fix on all plastic trait
 def fit(ind, env):
     #np.linalg.norm(ind - env) is the mismatch
     # The 10 is arbitrary, worst fitness possible is 6.83772..
@@ -63,12 +64,38 @@ px = cm_map_elites.default_params.copy()
 
 #Generate all possible combination
 # 10 bits = 1024 env
-n = 2
+n = 4
 seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 #From string to binary
 for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
+
+#TODO generate environment pair with proper distance
+env_dist = np.array([0, 0.5, 1.0, 1.5])
+
+
+def generate_genome(sequences, k):
+    assert(len(sequences) >= k)
+    l = len(sequences[0])
+    g = np.empty([k, l], dtype=bool)
+    sel_id = np.random.choice(len(sequences), k, replace=False)
+    j = 0
+    for seq in sel_id:
+        g[j] = sequences[seq]
+        j += 1
+    return g
+
+
+def mutate_g(genome):
+    ran1 = np.random.randint(0, len(genome))
+    s_genome = genome[ran1]
+    all_mut = np.tile(s_genome, (len(s_genome), 1))
+
+    for t in range(0, len(s_genome) - 1):
+        all_mut[t][t] ^= 1
+
+    print(all_mut)
 
 
 n_sim = 1

@@ -72,10 +72,9 @@ default_params = \
     }
 
 class Ind:
-    def __init__(self, genome, trait_x, trait_y, fitness, position=None):
+    def __init__(self, genome, trait_x, fitness, position=None):
         self.genome = genome
         self.trait_x = trait_x
-        self.trait_y = trait_y
         self.fitness = fitness
         self.position = position
 

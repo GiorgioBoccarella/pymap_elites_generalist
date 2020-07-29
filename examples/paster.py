@@ -129,7 +129,17 @@ def weighted_random_choice(w_env):
             return key
 
 
-pop = [[1, 1], [0, 1], [0, 0], [0, 0]]
-for individual in pop:                             # iterate over population
-    individual[random.randint(0, len(individual)-1)] ^= 1
 
+g = np.empty([1, 3], dtype=bool)
+
+
+def mutate_g(genome):
+    ran1 = np.random.randint(0, len(genome))
+    s_genome = genome[ran1]
+    all_mut = np.tile(s_genome, (len(s_genome),1))
+
+    for t in range(0, len(s_genome) - 1):
+        all_mut[t][t] ^= 1
+
+    print(all_mut)
+    #TODO calculate the fitness of all one step mutant and select accordingly
