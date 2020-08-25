@@ -5,10 +5,21 @@ import sys
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from map_elites import lsq
+from examples import lsq_f
+from examples import generate_env
+
+
+#TODO generate different environment for every simulation (different seed)
+#In generate_env(x, y)
+# x = L
+# y = seed
+envPair = generate_env.environmentPair(4, 3)
+env = envPair(1.0).real
+
 
 #Generate all possible combination
 # 10 bits = 1024 env
+#With N = 4 => 16 sequences and so on
 n = 4
 seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 #From string to binary
@@ -17,6 +28,7 @@ for i in range(len(seq_list)):
 
 
 def generate_genome(sequences, k):
+    """Generates genome with certain K size, the L depends on the length of the sequences"""
     assert(len(sequences) >= k)
     l = len(sequences[0])
     g = np.empty([k, l], dtype=bool)
@@ -27,23 +39,99 @@ def generate_genome(sequences, k):
         j += 1
     return g
 
-g = generate_genome(seq_list, 3)
+g = generate_genome(seq_list, 2)
 
+print("This is G:")
+g = g*1
 print(g)
+print()
+
+print("This is E:")
+env = env[0]
+print(env)
+print()
+
+[x, resnorm, residual] = lsq_f.lsqnonneg(g.T, env)
+
+print("This is the fitness: ")
+print(-math.sqrt(resnorm))
+
+print()
 
 def mutate_g(genome):
+    """This takes one of the K_i and returns all the mutation of K_i to the original genome"""
+    np.random.seed()
     ran1 = np.random.randint(0, len(genome))
+    #Here it's decided which K is mutated
     s_genome = genome[ran1]
     all_mut = np.tile(s_genome, (len(s_genome) - 1, 1))
 
-    print()
     print(s_genome)
-    print()
 
     for t in range(0, len(s_genome) - 1):
         all_mut[t][t] ^= 1
 
-    return all_mut
+    g_mut = np.repeat(g[np.newaxis, ...], len(all_mut), axis=0)
+
+    for i in range(0, len(all_mut) - 1):
+        g_mut[i][ran1] = all_mut[i]
+
+    return g_mut
+
+m = mutate_g(g)
+
+print()
+
+#TODO print fitness for example sequence
+#Problem is that you can not calculate the fitness if you do not have the full genome
+def lucky_mut(s_genome, all_g, env):
+
+    #Calculate Fitness of the starting genome
+    [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome, env)
+    fit_s = -math.sqrt(resnorm)
+
+    #Calculate fitness of all mutant genome
+    fit_vec = np.empty([len(all_g)], dtype=float)
+    for i in all_g:
+        t = i.T
+        [x, resnorm, residual] = lsq_f.lsqnonneg(t, env)
+        fit_vec[i] = -math.sqrt(resnorm)
+
+
+    #Store only beneficial mutation
+    assert(len(fit_vec) == len(all_g))
+    filt_fit = np.empty()
+    filt_g = np.empty()
+    j = 0
+    for i in fit_vec:
+        if i < fit_s:
+            filt_fit[j] = i
+            filt_g[j] = all_g[i]
+            j += 1
+
+    #Select the lucky mutation based on fitness
+    dict = {}
+    for A, B in zip(filt_fit, filt_g):
+        dict[A] = B
+
+    #TODO weighted random
+
+
+
+    print(fit_vec)
+
+    scale_fit = max(abs(fit_vec))
+    print(scale_fit)
+    fit_vec = scale_fit + fit_vec + 0.001
+
+    print(fit_vec)
+
+    return fit_vec
+    #return resnorm
+
+lucky_mut(m, env)
+exit()
+
 
 
 def weighted_random_choice(w_env):

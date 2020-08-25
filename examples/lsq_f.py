@@ -180,7 +180,7 @@ if __name__=='__main__':
                      [1, 1],
                      [1, 1]])
 
-    d = numpy.array([0,    1])
+    d = numpy.array([0, 1])
 
     [x, resnorm, residual] = lsqnonneg(C.T, d)
 

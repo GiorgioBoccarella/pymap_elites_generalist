@@ -1,6 +1,7 @@
 import numpy as np
 import collections
 import random
+import map_elites.lsq as lsq
 
 def makehash():
     return collections.defaultdict(makehash)
@@ -130,7 +131,7 @@ def weighted_random_choice(w_env):
 
 
 
-g = np.empty([1, 3], dtype=bool)
+g = np.empty([1, 10], dtype=bool)
 
 
 def mutate_g(genome):
@@ -141,5 +142,7 @@ def mutate_g(genome):
     for t in range(0, len(s_genome) - 1):
         all_mut[t][t] ^= 1
 
-    print(all_mut)
-    #TODO calculate the fitness of all one step mutant and select accordingly
+    return all_mut
+
+
+

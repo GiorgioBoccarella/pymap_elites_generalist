@@ -7,13 +7,7 @@ References:
 Contributed by Klaus Schuch (schuch@igi.tugraz.at)
 based on MATLAB's lsqnonneg function
 
-Modified for fitness function(Giorgio Boccarella)
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 
 import numpy
 import math
@@ -109,7 +103,7 @@ def lsqnonneg(C, d, x0=None, tol=None, itmax_factor=3):
         resid = d - numpy.dot(C, x)
         w = numpy.dot(C.T, resid)
 
-    return -math.sqrt(sum(resid * resid))
+    return (x, sum(resid * resid), resid)
 
 
 # Unittest
@@ -133,21 +127,18 @@ if __name__=='__main__':
 
     [x, resnorm, residual] = lsqnonneg(C, d)
     dres = abs(resnorm - 0.8315)          # compare with matlab result
-    print('ok, diff:', dres)
     if dres > 0.001:
-        raise Exeption('Error')
+        raise Exception('Error')
 
     [x, resnorm, residual] = lsqnonneg(C1, d)
     dres = abs(resnorm - 0.1477)          # compare with matlab result
-    print('ok, diff:', dres)
     if dres > 0.01:
-        raise Exeption('Error')
+        raise Exception('Error')
 
     [x, resnorm, residual] = lsqnonneg(C2, d)
     dres = abs(resnorm - 0.1027)          # compare with matlab result
-    print('ok, diff:', dres)
     if dres > 0.01:
-        raise Exeption('Error')
+        raise Exception('Error')
 
     k = numpy.array([[0.1210, 0.2319, 0.4398, 0.9342, 0.1370],
                      [0.4508, 0.2393, 0.3400, 0.2644, 0.8188],
@@ -166,23 +157,23 @@ if __name__=='__main__':
 
     [x, resnorm, residual] = lsqnonneg(k, l)
     dres = abs(resnorm - 0.3695)          # compare with matlab result
-    print('ok, diff:', dres)
     if dres > 0.01:
         raise Exception('Error')
 
     [x, resnorm, residual] = lsqnonneg(k1, l)
     dres = abs(resnorm - 2.8639)          # compare with matlab result
-    print('ok, diff:', dres)
     if dres > 0.01:
         raise Exception('Error')
 
-    C = numpy.array([[0, 1],
-                     [0, 1],
-                     [0, 1]])
+    C = numpy.array([[1.0, 1.0],
+                     [2.0, 1.0],
+                     [5.0, 1.0],
+                     [6.0, 1.0],
+                     [10.0, 1.0]])
 
-    d = numpy.array([0,    1])
+    d = numpy.array([3, 5, 11, 13, 21])
 
-    [x, resnorm, residual] = lsqnonneg(C.T, d)
+    [x, resnorm, residual] = lsqnonneg(C, d)
 
     print([x, resnorm, residual])
     print(-math.sqrt(resnorm))
