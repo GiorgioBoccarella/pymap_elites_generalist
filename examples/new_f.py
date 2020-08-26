@@ -73,8 +73,11 @@ def mutate_g(genome):
 
     g_mut = np.repeat(g[np.newaxis, ...], len(all_mut), axis=0)
 
-    for i in range(0, len(all_mut) - 1):
+    for i in range(0, len(all_mut)):
         g_mut[i][ran1] = all_mut[i]
+
+    print()
+
 
     return g_mut
 
@@ -84,53 +87,39 @@ print()
 
 #TODO print fitness for example sequence
 #Problem is that you can not calculate the fitness if you do not have the full genome
-def lucky_mut(s_genome, all_g, env):
+def gen_lucky_mut(s_genome, all_g, env):
 
     #Calculate Fitness of the starting genome
-    [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome, env)
+    [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env)
     fit_s = -math.sqrt(resnorm)
+
+    print(fit_s)
 
     #Calculate fitness of all mutant genome
     fit_vec = np.empty([len(all_g)], dtype=float)
+    l = []
+    j = 0
     for i in all_g:
         t = i.T
         [x, resnorm, residual] = lsq_f.lsqnonneg(t, env)
         fit_vec[i] = -math.sqrt(resnorm)
+        l.append([fit_vec[j], i])
+        j += 1
 
+    l_c = []
+    for j in range(0, len(l)):
+        if l[j][0] > fit_s:
+            l_c.append(l[j])
 
-    #Store only beneficial mutation
-    assert(len(fit_vec) == len(all_g))
-    filt_fit = np.empty()
-    filt_g = np.empty()
-    j = 0
-    for i in fit_vec:
-        if i < fit_s:
-            filt_fit[j] = i
-            filt_g[j] = all_g[i]
-            j += 1
+    return l_c , l
 
-    #Select the lucky mutation based on fitness
-    dict = {}
-    for A, B in zip(filt_fit, filt_g):
-        dict[A] = B
+l_c, l = gen_lucky_mut(g, m, env)
 
-    #TODO weighted random
+print(l)
+print(l_c)
 
-
-
-    print(fit_vec)
-
-    scale_fit = max(abs(fit_vec))
-    print(scale_fit)
-    fit_vec = scale_fit + fit_vec + 0.001
-
-    print(fit_vec)
-
-    return fit_vec
-    #return resnorm
-
-lucky_mut(m, env)
 exit()
+
 
 
 
