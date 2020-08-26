@@ -93,29 +93,44 @@ def gen_lucky_mut(s_genome, all_g, env):
     [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env)
     fit_s = -math.sqrt(resnorm)
 
+    print("startfit")
     print(fit_s)
 
-    #Calculate fitness of all mutant genome
-    fit_vec = np.empty([len(all_g)], dtype=float)
+    #Calculate fitness of all mutant genomes
+    #fit_vec = np.empty([len(all_g)], dtype=float)
     l = []
-    j = 0
     for i in all_g:
         t = i.T
         [x, resnorm, residual] = lsq_f.lsqnonneg(t, env)
-        fit_vec[i] = -math.sqrt(resnorm)
-        l.append([fit_vec[j], i])
-        j += 1
+        fit_m = -math.sqrt(resnorm)
+        fit_diff = fit_m - fit_s
+        if fit_diff > 0:
+            l.append([fit_diff, i])
 
-    l_c = []
-    for j in range(0, len(l)):
-        if l[j][0] > fit_s:
-            l_c.append(l[j])
+        #print(fit_vec[i])
 
-    return l_c , l
 
-l_c, l = gen_lucky_mut(g, m, env)
+        #for i in fit_vec:
+         #   print(round(i, 3))
 
-print(l)
+        #if fit_vec[i] > 0:
+        #   l.append([fit_vec[j], i])
+        #    j += 1
+
+
+    #Draw beneficial mutation with probability dependent on fitness increase
+
+
+
+
+
+
+    return l
+
+env1 = np.array([1, 0, 1, 0])
+
+l_c = gen_lucky_mut(g, m, env1)
+
 print(l_c)
 
 exit()
