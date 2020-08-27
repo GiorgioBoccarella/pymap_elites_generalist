@@ -1,26 +1,54 @@
 import math
 import numpy as np
 import random
+from numpy.random import choice
 import sys
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from examples import lsq_f
 from examples import generate_env
+from map_elites import common_new as cm
 
+#Seed MUST BE different from 0 (see gen_env)
+#For each sim generate random seed
+seed = 1
+n = 6
+#Generate one environment Pair
+first_env = 1.3
+envPair = generate_env.environmentPair(n, seed)
+env = envPair(first_env)
 
-#TODO generate different environment for every simulation (different seed)
-#In generate_env(x, y)
-# x = L
-# y = seed
-envPair = generate_env.environmentPair(4, 3)
-env = envPair(1.0).real
+#Fuction that creates a family of environemt starting from env
+envPair_c = generate_env.environmentPair(env, 0)
+
+#Add all environements in list with respective distance
+env_dist = [[0], [0.9], [1.3]]
+envList = [] # This would be implemented as parameter
+dist_env_add = np.array([0, 0.9])
+print(dist_env_add)
+for i in range(0, len(dist_env_add)):
+    envList.append(envPair_c(dist_env_add[i]))
+
+#The starting env is added here
+envList.append(env)
+
+print(envList)
+print(env_dist)
+
+l = []
+for i in range(0, len(envList)):
+    l.append(cm.Env(env_dist[i], envList[i]))
+
+print(l)
+
+for i in range(0, len(l)):
+    print(l[i].env_distance)
 
 
 #Generate all possible combination
 # 10 bits = 1024 env
-#With N = 4 => 16 sequences and so on
-n = 4
+#With N = 4 => 16 sequences and so o
 seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 #From string to binary
 for i in range(len(seq_list)):
@@ -86,7 +114,7 @@ m = mutate_g(g)
 print()
 
 #TODO print fitness for example sequence
-#Problem is that you can not calculate the fitness if you do not have the full genome
+
 def gen_lucky_mut(s_genome, all_g, env):
 
     #Calculate Fitness of the starting genome
@@ -107,64 +135,21 @@ def gen_lucky_mut(s_genome, all_g, env):
         if fit_diff > 0:
             l.append([fit_diff, i])
 
-        #print(fit_vec[i])
+
+    p = np.array([a_tuple[0] for a_tuple in l])
+    p /= p.sum()
+    genomes = np.array([a_tuple[0] for a_tuple in l])
 
 
-        #for i in fit_vec:
-         #   print(round(i, 3))
+    draw = choice(genomes, 1,
+                  p=p)
 
-        #if fit_vec[i] > 0:
-        #   l.append([fit_vec[j], i])
-        #    j += 1
+    return draw
 
 
-    #Draw beneficial mutation with probability dependent on fitness increase
-
-
-
-
-
-
-    return l
-
-env1 = np.array([1, 0, 1, 0])
-
-l_c = gen_lucky_mut(g, m, env1)
+l_c = gen_lucky_mut(g, m, env)
 
 print(l_c)
 
 exit()
 
-
-
-
-def weighted_random_choice(w_env):
-    sum_f = 0
-    for idx in w_env.values():
-        sum_f += idx.fitness
-    pick = random.uniform(0, sum_f)
-    current = 0
-    for key, value in w_env.items():
-        current += value.fitness
-        if current > pick:
-            return key
-
-def lucky_mut(all_mut, env):
-    fit_vec = np.empty([len(all_mut)], dtype=float)
-    for i in all_mut:
-        fit_vec[i] = lsq.lsqnonneg(i.T, env)
-
-    #fit as a probability that sums to one
-
-    draw = choice(list_of_candidates, number_of_items_to_pick,
-    p = probability_distribution)
-    return mut
-
-
-
-
-
-print()
-mutate_g(g)
-print()
-print(g)

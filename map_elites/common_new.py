@@ -45,7 +45,7 @@ from pathlib import Path
 import sys
 import random
 from collections import defaultdict
-from sklearn.cluster import KMeans
+#from sklearn.cluster import KMeans
 
 default_params = \
     {
@@ -78,6 +78,12 @@ class Ind:
         self.env = env
         self.fitness = fitness
         self.position = position
+
+
+class Env:
+    def __init__(self, env_distance, env):
+        self.env_distance = env_distance
+        self.env = env
 
 
 

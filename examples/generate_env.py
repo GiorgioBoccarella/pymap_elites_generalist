@@ -9,10 +9,10 @@ def environmentPair(L, envSeed):
 
 	sig = signature(environmentPair)
 	params = sig.parameters
-	nargin = len(params)
+	#nargin = len(params)
 
 	# These conditional statements are the same used in MATLAB
-	if nargin == 1:
+	if envSeed == 0:
 		env = L
 	else:
 		np.random.seed(envSeed)
