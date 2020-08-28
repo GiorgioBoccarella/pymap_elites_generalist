@@ -46,62 +46,56 @@ import sys
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.mod_model as mt_map_elites
-import map_elites.common_new as cm_map_elites
-import map_elites.l
+import map_elites.wrap_model as mt_map_elites
 
-#TODO Fintess function to fix on all plastic trait
-def fit(ind, env):
-    #np.linalg.norm(ind - env) is the mismatch
-    # The 10 is arbitrary, worst fitness possible is 6.83772..
-    f = 4 - np.linalg.norm(ind - env)
-    f = np.exp(f)
-    return f
+from examples import generate_env
+from map_elites import common_new as cm
 
-# dim_map, dim_x, function
-px = cm_map_elites.default_params.copy()
+#Seed MUST BE different from 0 (see gen_env)
+#For each sim generate random seed
+seed = 1
+n = 6
+#Generate one environment Pair
+first_env = 1.3
+envPair = generate_env.environmentPair(n, seed)
+env = envPair(first_env)
 
+#Fuction that creates a family of environment starting from env
+envPair_c = generate_env.environmentPair(env, 0)
+
+#Add all environments in list with respective distance
+env_dist = [[0], [0.9], [1.3]]
+envList = [] # This would be implemented as parameter
+dist_env_add = np.array([0, 0.9])
+print(dist_env_add)
+for i in range(0, len(dist_env_add)):
+    envList.append(envPair_c(dist_env_add[i]))
+
+#The starting env is added here
+envList.append(env)
+
+envList = np.array(envList)
+envList = envList.real
+
+
+env_pair_l = []
+for i in range(0, len(envList)):
+    env_pair_l.append(cm.Env(env_dist[i], envList[i]))
+
+for i in range(0, len(env_pair_l)):
+    print(env_pair_l[i].env_distance)
+    print(env_pair_l[i].env)
 
 #Generate all possible combination
 # 10 bits = 1024 env
-n = 4
+#With N = 4 => 16 sequences etc..
 seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 #From string to binary
 for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
+archive = mt_map_elites.compute(max_evals=1e3, k=6, env_pair_list = env_pair_l, seq_list= seq_list,
+            params=cm.default_params, log_file=None)
 
-#TODO generate environment pair with proper distance
-env_dist = np.array([0, 0.5, 1.0, 1.5])
-
-
-def generate_genome(sequences, k):
-    assert(len(sequences) >= k)
-    l = len(sequences[0])
-    g = np.empty([k, l], dtype=bool)
-    sel_id = np.random.choice(len(sequences), k, replace=False)
-    j = 0
-    for seq in sel_id:
-        g[j] = sequences[seq]
-        j += 1
-    return g
-
-
-def mutate_g(genome):
-    ran1 = np.random.randint(0, len(genome))
-    s_genome = genome[ran1]
-    all_mut = np.tile(s_genome, (len(s_genome), 1))
-
-    for t in range(0, len(s_genome) - 1):
-        all_mut[t][t] ^= 1
-
-    print(all_mut)
-
-
-n_sim = 1
-#Env params is the centroid
-for s in range(0, n_sim):
-    archive = mt_map_elites.compute(dim_x=4, f=fit, env=env_list, k=2, env_params=[],
-                                    seq_list=seq_list, end_sim=2e4, params=px, sim=n_sim)
-    print(s)
-
+print(archive)
+print("yee")

@@ -72,10 +72,9 @@ default_params = \
     }
 
 class Ind:
-    def __init__(self, genome, trajectory, env, fitness, position=None):
+    def __init__(self, genome, trajectory, fitness, position=None):
         self.genome = genome
         self.trajectory = trajectory
-        self.env = env
         self.fitness = fitness
         self.position = position
 

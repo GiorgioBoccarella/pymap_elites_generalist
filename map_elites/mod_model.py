@@ -46,7 +46,6 @@ from pathlib import Path
 import sys
 import random
 from collections import defaultdict
-from sklearn.neighbors import KDTree
 from scipy.spatial import distance
 
 from map_elites import common_new as cm
@@ -152,11 +151,7 @@ def compute(dim_map=-1,
             variation_operator=cm.variation,
             params=cm.default_params,
             log_file=None):
-    """Multi-task MAP-Elites
-    Reference:
-    Mouret and Maguire (2020). Quality Diversity for Multitask Optimization
-    Proceedings of ACM GECCO.
-    """
+
     print(params)
     assert(f != None)
     assert(dim_x != -1)

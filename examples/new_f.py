@@ -33,17 +33,18 @@ for i in range(0, len(dist_env_add)):
 #The starting env is added here
 envList.append(env)
 
-print(envList)
-print(env_dist)
+envList = np.array(envList)
+envList = envList.real
+
 
 l = []
 for i in range(0, len(envList)):
     l.append(cm.Env(env_dist[i], envList[i]))
 
-print(l)
-
 for i in range(0, len(l)):
     print(l[i].env_distance)
+    print(l[i].env)
+
 
 
 #Generate all possible combination
@@ -75,7 +76,6 @@ print(g)
 print()
 
 print("This is E:")
-env = env[0]
 print(env)
 print()
 
@@ -85,6 +85,8 @@ print("This is the fitness: ")
 print(-math.sqrt(resnorm))
 
 print()
+
+genome = g.copy()
 
 def mutate_g(genome):
     """This takes one of the K_i and returns all the mutation of K_i to the original genome"""
@@ -99,7 +101,7 @@ def mutate_g(genome):
     for t in range(0, len(s_genome) - 1):
         all_mut[t][t] ^= 1
 
-    g_mut = np.repeat(g[np.newaxis, ...], len(all_mut), axis=0)
+    g_mut = np.repeat(genome[np.newaxis, ...], len(all_mut), axis=0)
 
     for i in range(0, len(all_mut)):
         g_mut[i][ran1] = all_mut[i]
@@ -109,7 +111,9 @@ def mutate_g(genome):
 
     return g_mut
 
-m = mutate_g(g)
+m = mutate_g(genome)
+
+print(m)
 
 print()
 
@@ -151,5 +155,5 @@ l_c = gen_lucky_mut(g, m, env)
 
 print(l_c)
 
-exit()
+
 
