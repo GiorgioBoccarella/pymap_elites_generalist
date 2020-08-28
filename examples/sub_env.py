@@ -78,7 +78,7 @@ envList = np.array(envList)
 envList = envList.real
 
 
-env_pair_l = []
+env_pair_l = {}
 for i in range(0, len(envList)):
     env_pair_l.append(cm.Env(env_dist[i], envList[i]))
 

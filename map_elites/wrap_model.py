@@ -147,8 +147,7 @@ def env_pair_fitness(genome, env_pair):
 
 
 def compute(max_evals=1e3,
-            k=2
-            ,
+            k=2,
             env_pair_list=[],
             seq_list=[],
             params=cm.default_params,
@@ -170,7 +169,7 @@ def compute(max_evals=1e3,
     n_evals = 0 # number of evaluations
     successes = defaultdict(list) # count the successes
     while (n_evals < 2):
-        #If environemnt is empty fill with random individuals
+        #If environment is empty fill with random individuals
         if len(archive) < n_env_pair:
             for i in range(0, len(env_pair_list)):
                 g = generate_genome(seq_list, k)
@@ -187,10 +186,19 @@ def compute(max_evals=1e3,
                 ind = make_ind(to_gen_ind)
                 print(ind.position)
                 add_to_archive(ind, archive)
+        else:
+            for i in archive.keys():
+                start_g = archive[i].genome
+                all_mut = generate_all_mutants(start_g)
+                env = env_pair_list
+                gen_lucky_mut(start_g, all_mut, )
+
+        else:
+        for i in archive:
+            generate_all_mutants(i.)
+
         for i in archive.keys():
             print(archive[i].genome)
-
         n_evals += 1
-
 
     return archive
