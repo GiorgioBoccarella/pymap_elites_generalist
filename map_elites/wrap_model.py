@@ -83,11 +83,15 @@ def generate_all_mutants(genome):
     for i in range(0, len(all_mut)):
         g_mut[i][ran1] = all_mut[i]
 
-    print()
     return g_mut
 
 
 def gen_lucky_mut(s_genome, all_g, env):
+
+    # Which env?
+    env = env[np.random.binomial(1, 0.5, 1)]
+    env = env.flatten()
+    print(s_genome)
 
     # Calculate Fitness of the starting genome
     [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env)
@@ -109,17 +113,28 @@ def gen_lucky_mut(s_genome, all_g, env):
         if fit_diff > 0:
             l.append([fit_diff, i])
 
-    # Fitness increase in env becomes probability that sum up to one
-    p = np.array([fitness[0] for fitness in l])
-    p /= p.sum()
+    print("empty?")
+    print(l != [])
 
-    # Genomes trait value
-    genomes = np.array([genome[0] for genome in l])
+    if l != []:
+        # Fitness increase in env becomes probability that sum up to one
+        p = np.array([fitness[0] for fitness in l])
+        p /= p.sum()
 
-    # Here lucky mutation is selected
-    draw = choice(genomes, 1, p=p)
+        # Genomes trait value
+        genomes = np.array([genome[1] for genome in l])
 
-    return draw
+        # Here lucky mutation is selected
+        draw_n = choice(len(genomes), 1, p=p)
+        mut_genome = genomes[draw_n]
+        mut_genome = mut_genome.reshape(s_genome.shape)
+        mut_genome
+    else:
+        mut_genome = []
+
+    mut_genome
+
+    return mut_genome
 
 def make_ind(t):
     g, trj, f, pos = t
@@ -128,8 +143,7 @@ def make_ind(t):
 
 
 def add_to_archive(ind, archive):
-    env_pair = cm.make_hashable(ind.position)
-    archive[env_pair] = ind
+    archive[ind.position] = ind
     return 1
 
 def env_pair_fitness(genome, env_pair):
@@ -148,7 +162,7 @@ def env_pair_fitness(genome, env_pair):
 
 def compute(max_evals=1e3,
             k=2,
-            env_pair_list=[],
+            env_pair_dict=[],
             seq_list=[],
             params=cm.default_params,
             log_file=None):
@@ -158,7 +172,7 @@ def compute(max_evals=1e3,
     assert (len(seq_list) >= k)
 
     # This I have to check
-    n_env_pair = len(env_pair_list)
+    n_env_pair = len(env_pair_dict)
 
     # init archive (empty)
     archive = {}
@@ -168,37 +182,35 @@ def compute(max_evals=1e3,
     # main loop
     n_evals = 0 # number of evaluations
     successes = defaultdict(list) # count the successes
-    while (n_evals < 2):
+    while (n_evals < 4):
         #If environment is empty fill with random individuals
         if len(archive) < n_env_pair:
-            for i in range(0, len(env_pair_list)):
+            for i in env_pair_dict.keys():
                 g = generate_genome(seq_list, k)
-                env_c = env_pair_list[i]
+                env_c = env_pair_dict[i]
                 # Trajectory is initialized with first environment
                 # Later new positions are appended
-                trj = env_c.env_distance
+                trj = i
                 # Same for position but this is the actual position
-                pos = env_c.env_distance
+                pos = i
                 # Generate fitness
-                fit = env_pair_fitness(g, env_c.env)
+                fit = env_pair_fitness(g, env_pair_dict[i])
                 # Pack traits and feature, make Ind and add to archive
                 *to_gen_ind, = g, trj, fit, pos
                 ind = make_ind(to_gen_ind)
-                print(ind.position)
                 add_to_archive(ind, archive)
         else:
             for i in archive.keys():
+                print(i)
                 start_g = archive[i].genome
                 all_mut = generate_all_mutants(start_g)
-                env = env_pair_list
-                gen_lucky_mut(start_g, all_mut, )
-
-        else:
-        for i in archive:
-            generate_all_mutants(i.)
-
-        for i in archive.keys():
-            print(archive[i].genome)
-        n_evals += 1
-
+                env = env_pair_dict[i]
+                mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                if mutated_genome != []:
+                    archive[i].genome = mutated_genome
+                else:
+                    print("Runned out of beneficial mutation")
+                    print()
+                print(archive[i].genome)
+                n_evals += 1
     return archive
