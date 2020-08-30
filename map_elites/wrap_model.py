@@ -73,7 +73,7 @@ def generate_all_mutants(genome):
     s_genome = genome[ran1]
     all_mut = np.tile(s_genome, (len(s_genome) - 1, 1))
 
-    print(s_genome)
+    #print(s_genome)
 
     for t in range(0, len(s_genome) - 1):
         all_mut[t][t] ^= 1
@@ -91,7 +91,7 @@ def gen_lucky_mut(s_genome, all_g, env):
     # Which env?
     env = env[np.random.binomial(1, 0.5, 1)]
     env = env.flatten()
-    print(s_genome)
+    #print(s_genome)
 
     # Calculate Fitness of the starting genome
     [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env)
@@ -113,8 +113,6 @@ def gen_lucky_mut(s_genome, all_g, env):
         if fit_diff > 0:
             l.append([fit_diff, i])
 
-    print("empty?")
-    print(l != [])
 
     if l != []:
         # Fitness increase in env becomes probability that sum up to one
@@ -182,7 +180,7 @@ def compute(max_evals=1e3,
     # main loop
     n_evals = 0 # number of evaluations
     successes = defaultdict(list) # count the successes
-    while (n_evals < 4):
+    while (n_evals < 10):
         #If environment is empty fill with random individuals
         if len(archive) < n_env_pair:
             for i in env_pair_dict.keys():
@@ -211,6 +209,13 @@ def compute(max_evals=1e3,
                 else:
                     print("Runned out of beneficial mutation")
                     print()
-                print(archive[i].genome)
-                n_evals += 1
+                    print(archive[i].genome)
+                archive[i].fitness = env_pair_fitness(archive[i].genome, env_pair_dict[i])
+                print("Average fitness: ")
+                print(archive[i].fitness)
+                print()
+            n_evals += 1
+            print("Evaluation: ")
+            print(n_evals, )
+            print()
     return archive

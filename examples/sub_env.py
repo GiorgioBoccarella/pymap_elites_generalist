@@ -54,7 +54,7 @@ from map_elites import common_new as cm
 #Seed MUST BE different from 0 (see gen_env)
 #For each sim generate random seed
 seed = 1
-n = 6
+n = 18
 #Generate one environment Pair
 first_env = 1.3
 envPair = generate_env.environmentPair(n, seed)
@@ -96,5 +96,4 @@ for i in range(len(seq_list)):
 archive = mt_map_elites.compute(max_evals=1e3, k=2, env_pair_dict = env_pair_d, seq_list= seq_list,
             params=cm.default_params, log_file=None)
 
-print(archive)
-print("yee")
+#Todo fitness of wild and average should be the same in env 0
