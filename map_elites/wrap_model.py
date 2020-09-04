@@ -42,12 +42,8 @@
 import math
 import numpy as np
 from numpy.random import choice
-import multiprocessing
-from pathlib import Path
-import sys
-import random
+import statistics
 from collections import defaultdict
-from scipy.spatial import distance
 
 from map_elites import common_new as cm
 from examples import lsq_f
@@ -65,44 +61,42 @@ def generate_genome(sequences, k):
         j += 1
     return g
 
+
 def generate_all_mutants(genome):
-    """This takes one of the K_i and returns all the mutation of K_i to the original genome"""
-    np.random.seed()
-    ran1 = np.random.randint(0, len(genome))
-    #Here it's decided which K is mutated
-    s_genome = genome[ran1]
-    all_mut = np.tile(s_genome, (len(s_genome) - 1, 1))
+    """This generate all the mutation of the original genome, all the K_i is included"""
 
-    #print(s_genome)
+    all_mut_e = []
 
-    for t in range(0, len(s_genome) - 1):
-        all_mut[t][t] ^= 1
+    for i in range(0, len(genome)):
+        s_genome = genome[i]
+        all_mut = np.tile(s_genome, (len(s_genome) - 1, 1))
+        for t in range(0, len(s_genome) - 1):
+            all_mut[t][t] ^= 1
+        g_mut = np.repeat(genome[np.newaxis, ...], len(all_mut), axis=0)
+        for j in range(0, len(all_mut)):
+            g_mut[j][i] = all_mut[j]
+        all_mut_e.append(g_mut)
 
-    g_mut = np.repeat(genome[np.newaxis, ...], len(all_mut), axis=0)
+    all_mutants_array = np.vstack(all_mut_e)
 
-    for i in range(0, len(all_mut)):
-        g_mut[i][ran1] = all_mut[i]
-
-    return g_mut
+    return all_mutants_array
 
 
 def gen_lucky_mut(s_genome, all_g, env):
+    """This generates a lucky mutation that is beneficial in at least one environment"""
 
     # Which env?
     env = env[np.random.binomial(1, 0.5, 1)]
     env = env.flatten()
-    #print(s_genome)
+    # print(s_genome)
 
     # Calculate Fitness of the starting genome
     [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env)
     fit_s = -math.sqrt(resnorm)
 
-    print("Fitness of wild genome:")
+    print("Fitness before mutation:")
     print(fit_s)
     print()
-
-    # Calculate fitness of all mutant genomes
-    # fit_vec = np.empty([len(all_g)], dtype = float)
 
     l = []
     for i in all_g:
@@ -112,7 +106,6 @@ def gen_lucky_mut(s_genome, all_g, env):
         fit_diff = fit_m - fit_s
         if fit_diff > 0:
             l.append([fit_diff, i])
-
 
     if l != []:
         # Fitness increase in env becomes probability that sum up to one
@@ -126,19 +119,17 @@ def gen_lucky_mut(s_genome, all_g, env):
         draw_n = choice(len(genomes), 1, p=p)
         mut_genome = genomes[draw_n]
         mut_genome = mut_genome.reshape(s_genome.shape)
-        mut_genome
     else:
-        mut_genome = []
-
-    mut_genome
+        mut_genome = s_genome
+        print("Runned out of beneficial mutations")
 
     return mut_genome
 
+
+
 def make_ind(t):
-    g, trj, f, pos = t
-    return cm.Ind(g, trj, f, pos)
-
-
+    g, trj, f, f1, f2, pos = t
+    return cm.Ind(g, trj, f, f1, f2, pos)
 
 def add_to_archive(ind, archive):
     archive[ind.position] = ind
@@ -147,62 +138,124 @@ def add_to_archive(ind, archive):
 def env_pair_fitness(genome, env_pair):
         genome = genome.T
 
+        print(env_pair)
+
         [x, resnorm, residual] = lsq_f.lsqnonneg(genome, env_pair[0])
         fit_m_1 = -math.sqrt(resnorm)
+
+        print("Fit in E1:")
+        print(fit_m_1)
 
         [x, resnorm, residual] = lsq_f.lsqnonneg(genome, env_pair[1])
         fit_m_2 = -math.sqrt(resnorm)
 
+        print("Fit in E2:")
+        print(fit_m_2)
+        print()
+
+        #print("Modularity:")
+        #mod = print(fit_m_1/fit_m_2)
+        #print(mod)
+        #print()
+
         average_fitness = (fit_m_1 + fit_m_2)/2
 
-        return average_fitness
+        return average_fitness, fit_m_1, fit_m_2
 
+
+def scoreTradeOff(s_genome, all_g, env):
+
+    # Calculate Fitness of the starting genome in A
+    [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env[0])
+    fit_A = -math.sqrt(resnorm)
+
+    print("Fit A:")
+    print(fit_A)
+    print()
+
+    # Calculate Fitness of the starting genome in B
+    [x, resnorm, residual] = lsq_f.lsqnonneg(s_genome.T, env[1])
+    fit_B = -math.sqrt(resnorm)
+
+    print("Fit B:")
+    print(fit_B)
+    print()
+
+    # Calculate fitness of all mutant genomes
+    # fit_vec = np.empty([len(all_g)], dtype = float)
+
+    l_a = []
+    l_b = []
+    for i in all_g:
+        t = i.T
+        [x, resnorm, residual] = lsq_f.lsqnonneg(t, env[0])
+        fit_m_A = -math.sqrt(resnorm)
+
+        [x, resnorm, residual] = lsq_f.lsqnonneg(t, env[1])
+        fit_m_B = -math.sqrt(resnorm)
+        fit_diff_A = fit_m_A - fit_A
+        fit_diff_B = fit_m_B - fit_B
+        if fit_diff_A > 0 or fit_diff_B > 0:
+            l_a.append([fit_diff_A])
+            l_b.append([fit_diff_B])
+            print()
+
+
+    if l_a == []:
+        exit()
+        print("Runned out of beneficial mutations")
+
+    sum_fitA = np.array([item for sublist in l_a for item in sublist])
+    sum_fitB = np.array([item for sublist in l_b for item in sublist])
+
+    mut_tradeOff = - statistics.mean(sum_fitA*sum_fitB)/math.sqrt(statistics.mean(sum_fitA**2) * statistics.mean(sum_fitB**2))
+
+    print(mut_tradeOff)
+    return mut_tradeOff
 
 def compute(max_evals=1e3,
-            k=2,
+            k=0,
             env_pair_dict=[],
             seq_list=[],
-            params=cm.default_params,
-            log_file=None):
+            params=cm.default_params):
      
     print(params)
 
     assert (len(seq_list) >= k)
 
-    # This I have to check
-    n_env_pair = len(env_pair_dict)
-
     # init archive (empty)
     archive = {}
 
-    init_count = 0
+    init = 0
 
     # main loop
     n_evals = 0 # number of evaluations
-    successes = defaultdict(list) # count the successes
-    while (n_evals < 10):
+    # TOD count the successes
+    while (n_evals < 400):
         #If environment is empty fill with random individuals
-        if len(archive) < n_env_pair:
+        if init == 0:
             for i in env_pair_dict.keys():
                 g = generate_genome(seq_list, k)
-                env_c = env_pair_dict[i]
                 # Trajectory is initialized with first environment
                 # Later new positions are appended
                 trj = i
                 # Same for position but this is the actual position
                 pos = i
                 # Generate fitness
-                fit = env_pair_fitness(g, env_pair_dict[i])
+                fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[i])
                 # Pack traits and feature, make Ind and add to archive
-                *to_gen_ind, = g, trj, fit, pos
+                *to_gen_ind, = g, trj, fit, fitA, fitB, pos
                 ind = make_ind(to_gen_ind)
                 add_to_archive(ind, archive)
+                init = 1
         else:
             for i in archive.keys():
-                print(i)
                 start_g = archive[i].genome
                 all_mut = generate_all_mutants(start_g)
                 env = env_pair_dict[i]
+                score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                print("scoreTradeOff")
+                print(score_tradeOff)
                 mutated_genome = gen_lucky_mut(start_g, all_mut, env)
                 if mutated_genome != []:
                     archive[i].genome = mutated_genome
@@ -210,7 +263,7 @@ def compute(max_evals=1e3,
                     print("Runned out of beneficial mutation")
                     print()
                     print(archive[i].genome)
-                archive[i].fitness = env_pair_fitness(archive[i].genome, env_pair_dict[i])
+                archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[i])
                 print("Average fitness: ")
                 print(archive[i].fitness)
                 print()
@@ -218,4 +271,49 @@ def compute(max_evals=1e3,
             print("Evaluation: ")
             print(n_evals, )
             print()
+            cm.__save_archive(archive, n_evals)
     return archive
+
+
+
+
+
+
+def compute_mut(archive, env_pair_dict, steps = 20):
+
+    start_fit = env_pair_dict.copy()
+
+    for i in start_fit.keys():
+        start_fit[i] = -0.0001
+
+    vec_fit = start_fit.copy()
+
+    for i in vec_fit.keys():
+        vec_fit[i] = []
+
+
+
+    for s in range(0, steps):
+        for i in archive.keys():
+            fit_difference = 0
+            start_g = archive[i].genome
+            all_mut = generate_all_mutants(start_g)
+            env = env_pair_dict[i]
+            mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+            if mutated_genome != []:
+                archive[i].genome = mutated_genome
+            else:
+                print("Runned out of beneficial mutation")
+                print()
+            archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[1])
+            print("Step: ")
+            fit_difference = -(start_fit[i] - archive[i].fitness)
+            vec_fit[i].append(fit_difference)
+            i
+        s = s + 1
+        print(s)
+        print()
+
+    print(vec_fit)
+    return archive
+

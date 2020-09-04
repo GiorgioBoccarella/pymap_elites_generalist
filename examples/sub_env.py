@@ -54,9 +54,9 @@ from map_elites import common_new as cm
 #Seed MUST BE different from 0 (see gen_env)
 #For each sim generate random seed
 seed = 1
-n = 18
+n = 8
 #Generate one environment Pair
-first_env = 1.3
+first_env = 1.
 envPair = generate_env.environmentPair(n, seed)
 env = envPair(first_env)
 
@@ -64,9 +64,9 @@ env = envPair(first_env)
 envPair_c = generate_env.environmentPair(env, 0)
 
 # Add all environments in list with respective distance
-env_dist = (0, 0.9, 1.3)  # This would be implemented as parameter
+env_dist = (0.4, 0.8, 1.)  # This would be implemented as parameter
 envList = []
-dist_env_add = np.array([0, 0.9])
+dist_env_add = np.array([0.4, 0.8])
 print(dist_env_add)
 for i in range(0, len(dist_env_add)):
     envList.append(envPair_c(dist_env_add[i]))
@@ -93,7 +93,10 @@ seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
 for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
-archive = mt_map_elites.compute(max_evals=1e3, k=2, env_pair_dict = env_pair_d, seq_list= seq_list,
-            params=cm.default_params, log_file=None)
+archive = mt_map_elites.compute(max_evals=1e3, k=3, env_pair_dict=env_pair_d, seq_list=seq_list,
+            params=cm.default_params)
 
-#Todo fitness of wild and average should be the same in env 0
+#Todo fitness of wild and average should be the same in env 0!!
+
+#new_archive = mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
+

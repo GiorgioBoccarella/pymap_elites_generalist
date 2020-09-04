@@ -72,10 +72,12 @@ default_params = \
     }
 
 class Ind:
-    def __init__(self, genome, trajectory, fitness, position=None):
+    def __init__(self, genome, trajectory, fitness, fit1, fit2, position=None):
         self.genome = genome
         self.trajectory = trajectory
         self.fitness = fitness
+        self.fit1 = fit1
+        self.fit2 = fit2
         self.position = position
 
 
@@ -99,10 +101,11 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
     return list(s_list)
 
 
+sim = 1
 
 # format: fitness, centroid, desc, genome \n
 # fitness, centroid, desc and x are vectors
-def __save_archive(archive, gen, sim):
+def __save_archive(archive, gen):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
@@ -110,9 +113,10 @@ def __save_archive(archive, gen, sim):
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')
-            write_array(k.centroid, f)
-            write_array(k.desc, f)
-            write_array(k.x, f)
-            f.write(str(gen))
+            f.write(str(k.fit1) + ' ')
+            f.write(str(k.fit2) + ' ')
+            #write_array(k.genome, f)
+            #f.write(str(k.trajectory))
+            f.write(str(k.position) + ' ')
+            f.write(str(gen) + ' ')
             f.write("\n")
-
