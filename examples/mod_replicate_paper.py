@@ -41,62 +41,68 @@
 import math
 import numpy as np
 import random
-import sys
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import map_elites.wrap_model as mt_map_elites
+import map_elites.model_functions as mt_map_elites
 
 from examples import generate_env
-from map_elites import common_new as cm
+from map_elites import common as cm
 
-#Seed MUST BE different from 0 (see gen_env)
-#For each sim generate random seed
-seed = 1
-n = 8
-#Generate one environment Pair
-first_env = 1.
-envPair = generate_env.environmentPair(n, seed)
-env = envPair(first_env)
 
-#Fuction that creates a family of environment starting from env
-envPair_c = generate_env.environmentPair(env, 0)
+params = cm.default_params
 
-# Add all environments in list with respective distance
-env_dist = (0.4, 0.8, 1.)  # This would be implemented as parameter
-envList = []
-dist_env_add = np.array([0.4, 0.8])
-print(dist_env_add)
-for i in range(0, len(dist_env_add)):
-    envList.append(envPair_c(dist_env_add[i]))
+def environment_from_params(env_list_v, l_n, seed):
+    example_env = env_list_v[len(env_list_v) - 1]
+    envPair = generate_env.environmentPair(l_n, seed)
+    env = envPair(example_env)
 
-#The starting env is added here
-envList.append(env)
+    envPair_c = generate_env.environmentPair(env, 0)
 
-envList = np.array(envList)
-envList = envList.real
+    envList = []
 
+    for i in range(0, len(env_list_v)):
+        envList.append(envPair_c(env_list_v[i]))
+
+    envList = np.array(envList)
+    envList = envList.real
+
+    return envList
+
+
+# Seed MUST BE different from 0 (see gen_env)
+# For each sim generate random seed
+seed = params["seed"]
+l_n = params["l_n"]
+env_list = params["env_list"]
+
+envList = environment_from_params(env_list, l_n, seed)
 
 env_pair_d = {}
 
-for d, s in zip(env_dist, envList):
+for d, s in zip(env_list, envList):
     env_pair_d[d] = s
-
 
 
 #Generate all possible combination
 # 10 bits = 1024 env
 #With N = 4 => 16 sequences etc..
-seq_list = [bin(x)[2:].rjust(n, "0") for x in range(2**n)]
+seq_list = [bin(x)[2:].rjust(l_n, "0") for x in range(2**l_n)]
 #From string to binary
 for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
-archive = mt_map_elites.compute(max_evals=1e3, k=3, env_pair_dict=env_pair_d, seq_list=seq_list,
+#Is the n divisible by 4? 25% are 1
+assert(l_n % 4 == 0)
+
+seq_list = [i for i in seq_list if sum(i) == (l_n / 4)]
+
+
+archive = mt_map_elites.compute(max_evals=params["max_evals"], k=params["k"], env_pair_dict=env_pair_d, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params)
 
-#Todo fitness of wild and average should be the same in env 0!!
 
 #new_archive = mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
 
+#mt_map_elites.compute_mut(archive, env_pair_d, steps=20)

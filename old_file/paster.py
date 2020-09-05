@@ -1,7 +1,7 @@
 import numpy as np
 import collections
 import random
-import map_elites.lsq as lsq
+
 
 def makehash():
     return collections.defaultdict(makehash)

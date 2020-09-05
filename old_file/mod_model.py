@@ -48,7 +48,7 @@ import random
 from collections import defaultdict
 from scipy.spatial import distance
 
-from map_elites import common_new as cm
+from map_elites import common as cm
 
 def generate_genome(sequences, k):
     assert(len(sequences) >= k)

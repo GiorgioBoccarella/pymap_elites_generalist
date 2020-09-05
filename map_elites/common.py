@@ -45,56 +45,38 @@ from pathlib import Path
 import sys
 import random
 from collections import defaultdict
-from sklearn.cluster import KMeans
+#from sklearn.cluster import KMeans
 
 default_params = \
     {
-        # more of this -> higher-quality CVT
-        "cvt_samples": 15000,
-        # we evaluate in batches to paralleliez
-        "batch_size": 100,
-        # proportion of niches to be filled before starting
-        "random_init": 0.1,
-        # batch for random initialization
-        "random_init_batch": 1,
-        # when to write results (one generation = one batch)
-        "dump_period": 100000,
-        # do we use several cores?
-        "parallel": True,
-        # do we cache the result of CVT and reuse?
-        "cvt_use_cache": True,
-        # min/max of parameters
-        "min": 0,
-        "max": 1,
-        # only useful if you use the 'iso_dd' variation operator
-        "iso_sigma": 0.01,
-        "line_sigma": 0.2
+        "seed": 78,
+        "l_n": 24,
+        "env_list": [0.3, 0.7, 1.3],
+        "k": 4,
+        "sim": 5,
+        "max_evals": 400
     }
 
 class Ind:
-    def __init__(self, genome, trait_x, fitness, position=None):
+    def __init__(self, genome, trajectory, fitness, fit1, fit2, position=None):
         self.genome = genome
-        self.trait_x = trait_x
+        self.trajectory = trajectory
         self.fitness = fitness
+        self.fit1 = fit1
+        self.fit2 = fit2
         self.position = position
-
-
-def __centroids_filename(k, dim):
-    return 'centroids_' + str(k) + '_' + str(dim) + '.dat'
 
 
 
 def make_hashable(array):
     return tuple(map(float, array))
 
-
 def parallel_eval(evaluate_function, to_evaluate, pool, params):
     if params['parallel'] == True:
-        e_list = pool.map(evaluate_function, to_evaluate)
+        s_list = pool.map(evaluate_function, to_evaluate)
     else:
-        e_list = map(evaluate_function, to_evaluate)
+        s_list = map(evaluate_function, to_evaluate)
     return list(s_list)
-
 
 
 # format: fitness, centroid, desc, genome \n
@@ -103,13 +85,26 @@ def __save_archive(archive, gen, sim):
     def write_array(a, f):
         for i in a:
             f.write(str(i) + ' ')
-    filename = '/home/giorg/Documents/results/archive_sim_' + str(sim) + '.dat'
+    filename = '/home/giorg/Documents/results/archive_sim_' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.fitness) + ' ')
-            write_array(k.centroid, f)
-            write_array(k.desc, f)
-            write_array(k.x, f)
-            f.write(str(gen))
+            f.write(str(k.fit1) + ' ')
+            f.write(str(k.fit2) + ' ')
+            #write_array(k.genome, f)
+            #f.write(str(k.trajectory))
+            f.write(str(k.position) + ' ')
+            f.write(str(gen) + ' ')
             f.write("\n")
 
+def __save_file(tradeoff, env,  gen, sim):
+    def write_array(a, f):
+        for i in a:
+            f.write(str(i) + ' ')
+    filename = '/home/giorg/Documents/results/tradeoff_sim_' + '.dat'
+    with open(filename, 'a+') as f:
+        f.write(str(tradeoff) + ' ')
+        f.write(str(env) + ' ')
+        f.write(str(gen) + ' ')
+        f.write(str(sim) + " ")
+        f.write("\n")
