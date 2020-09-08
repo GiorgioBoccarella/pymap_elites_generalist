@@ -48,7 +48,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import map_elites.model_functions as mt_map_elites
 
 from examples import generate_env
-from map_elites import common as cm
+from map_elites import common_invasion as cm
 
 
 params = cm.default_params
@@ -94,15 +94,15 @@ for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
 #Is the n divisible by 4? 25% are 1
-assert(l_n % 4 == 0)
+assert(l_n % 2 == 0)
 
-seq_list = [i for i in seq_list if sum(i) == (l_n / 4)]
+seq_list = [i for i in seq_list if sum(i) == (l_n / 2)]
 
 
-archive = mt_map_elites.compute(max_evals=params["max_evals"], k=params["k"], env_pair_dict=env_pair_d, seq_list=seq_list, sim=params["sim"],
+archive = mt_map_elites.compute_invasion(max_evals=params["max_evals"], k=params["k"], env_pair_dict=env_pair_d, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params)
 
 
 #new_archive = mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
 
-mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
+#mt_map_elites.compute_mut(archive, env_pair_d, steps=20)

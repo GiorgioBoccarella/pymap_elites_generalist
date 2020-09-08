@@ -49,21 +49,22 @@ from collections import defaultdict
 
 default_params = \
     {
-        "seed": 85,
+        "seed": 64435,
         "l_n": 24,
-        "env_list": [0.2, 0.5, 0.9, 1.1, 1.3],
+        "env_list": [0.3, 0.9, 1.3],
         "k": 2,
-        "sim": 1,
-        "max_evals": 450
+        "sim": 40,
+        "max_evals": 500
     }
 
 class Ind:
-    def __init__(self, genome, trajectory, fitness, fit1, fit2, position=None):
+    def __init__(self, genome, trajectory, fitness, fit1, fit2, invasion_potential, position=None):
         self.genome = genome
         self.trajectory = trajectory
         self.fitness = fitness
         self.fit1 = fit1
         self.fit2 = fit2
+        self.invasion_potential = invasion_potential
         self.position = position
 
 
@@ -122,3 +123,14 @@ def __save_file_mut(vec_mut, vec_off):
             f.write(str(k) + "t ")
             write_array(vec_off[k], f)
             f.write("\n")
+
+
+
+def __save_file_mig(invader, wild, epoch, sim):
+    filename = '/home/giorg/Documents/results/inv_sim_' + '.dat'
+    with open(filename, 'a+') as f:
+        f.write(str(invader) + " ")
+        f.write(str(wild) + " ")
+        f.write(str(epoch) + " ")
+        f.write(str(sim) + " ")
+        f.write("\n")

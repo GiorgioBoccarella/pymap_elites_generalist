@@ -45,8 +45,11 @@ from numpy.random import choice
 import statistics
 from collections import defaultdict
 
-from map_elites import common as cm
+from map_elites import common_invasion as cm
 from examples import lsq_f
+
+import copy
+
 
 
 def generate_genome(sequences, k):
@@ -130,6 +133,10 @@ def make_ind(t):
     g, trj, f, f1, f2, pos = t
     return cm.Ind(g, trj, f, f1, f2, pos)
 
+def make_ind_inv(t):
+    g, trj, f, f1, f2, inv_pot, pos = t
+    return cm.Ind(g, trj, f, f1, f2, inv_pot, pos)
+
 def add_to_archive(ind, archive):
     archive[ind.position] = ind
     return 1
@@ -208,6 +215,8 @@ def compute(max_evals=10,
     for sim_n in range(0, sim):
         assert (len(seq_list) >= k)
 
+
+
         # init archive (empty)
         archive = {}
         init = 0
@@ -252,8 +261,8 @@ def compute(max_evals=10,
                 print("Evaluation: ")
                 print(n_evals)
                 cm.__save_archive(archive, n_evals, sim_n)
-    return 1
     return archive
+
 
 
 
@@ -261,9 +270,13 @@ def compute(max_evals=10,
 
 def compute_mut(archive, env_pair_dict, steps = 20):
 
-    start_fit = env_pair_dict.copy()
+    #We test starting fitness in mid environement before starting evo
+    for i in archive.keys():
+        archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[0.9])
 
-    for i in start_fit.keys():
+    start_fit = {}
+
+    for i in env_pair_dict.keys():
         start_fit[i] = [archive[i].fitness]
 
     vec_fit = start_fit.copy()
@@ -271,6 +284,10 @@ def compute_mut(archive, env_pair_dict, steps = 20):
     for i in vec_fit.keys():
         vec_fit[i] = []
 
+    vec_toff = start_fit.copy()
+
+    for i in vec_toff.keys():
+        vec_toff[i] = []
 
 
     for s in range(0, steps):
@@ -278,23 +295,183 @@ def compute_mut(archive, env_pair_dict, steps = 20):
             fit_difference = 0
             start_g = archive[i].genome
             all_mut = generate_all_mutants(start_g)
-            env = env_pair_dict[i]
+            env = env_pair_dict[0.9]
+            score_tradeOff = scoreTradeOff(start_g, all_mut, env)
             mutated_genome = gen_lucky_mut(start_g, all_mut, env)
             if mutated_genome != []:
                 archive[i].genome = mutated_genome
             else:
                 print("Runned out of beneficial mutation")
                 print()
-            archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[i])
+            archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[0.9])
             print("Step: ")
-            fit_difference = -(start_fit[i] - archive[i].fitness)
-            vec_fit[i].append(fit_difference)
-            i
+            #fit_difference = - (np.asarray(start_fit[i]) - archive[i].fitness)
+            fit_difference = archive[i].fitness
+            vec_fit[i].append(float(fit_difference))
+            vec_toff[i].append(score_tradeOff)
         s = s + 1
         print(s)
         print()
 
     print("Fitness of the mutants:")
     print(vec_fit)
+    cm.__save_file_mut(vec_fit,vec_toff)
     return archive
 
+
+def compute_invasion(max_evals=10,
+            k=0,
+            env_pair_dict=[],
+            seq_list=[],
+            sim=[],
+            params=cm.default_params):
+
+    print(params)
+
+    for sim_n in range(0, sim):
+        assert (len(seq_list) >= k)
+
+        np.random.seed(sim_n + params["seed"] * 3)
+
+        # init archive (empty)
+        archive = {}
+        init = 0
+
+        # main loop
+        n_evals = 0 # number of evaluations
+        # TOD count the successes
+        while (n_evals < max_evals):
+            # If environment is empty fill with random individuals
+            if init == 0:
+                # Starting genome is the same for all env_pair
+                g = generate_genome(seq_list, k)
+                for i in env_pair_dict.keys():
+                    # Trajectory is initialized with first environment
+                    # Later new positions are appended
+                    trj = [i]
+                    # Same for position but this is the actual position
+                    pos = i
+                    # Generate fitness
+                    fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[i])
+                    #Genrate invasion_potential
+                    inv_pot = {}
+                    for e in env_pair_dict:
+                        fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[e])
+                        inv_pot[e] = [fit, fitA, fitB]
+                    # Pack traits and feature, make Ind and add to archive
+                    *to_gen_ind, = g, trj, fit, fitA, fitB, inv_pot, pos
+                    ind = make_ind_inv(to_gen_ind)
+                    add_to_archive(ind, archive)
+                    init = 1
+            else:
+                invasion = np.random.binomial(1, 0.05, 1)
+                if invasion == True and n_evals > 20:
+                    keys = list(archive.keys())
+                    print()
+                    coordinates = np.random.choice(keys, 2, replace=False)
+                    invader = archive[coordinates[0]]
+                    wild_type = archive[coordinates[1]]
+
+                    # During which environmental exposure is the invasion happening?
+                    env = [1, 2]
+                    env_inv = int(np.random.choice(env, 1, replace=False))
+
+                    inv_f = invader.invasion_potential[coordinates[0]]
+                    w_f = wild_type.invasion_potential[coordinates[0]]
+                    print()
+
+                    env_inv = 0
+
+                    if inv_f[env_inv] > w_f[env_inv]:
+                        archive[coordinates[1]] = copy.deepcopy(archive[coordinates[0]])
+                        archive[coordinates[1]].trajectory.append(coordinates[1])
+                        cm.__save_file_mig(coordinates[0], coordinates[1], n_evals, sim_n)
+                else:
+                    for i in archive.keys():
+                        start_g = archive[i].genome
+                        all_mut = generate_all_mutants(start_g)
+                        env = env_pair_dict[i]
+                        score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                        mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                        if mutated_genome != []:
+                            archive[i].genome = mutated_genome
+                        else:
+                            print("Runned out of beneficial mutation")
+                            print()
+                            print(archive[i].genome)
+                        archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[i])
+                        for e in env_pair_dict.keys():
+                            fit, fitA, fitB = env_pair_fitness(archive[i].genome, env_pair_dict[e])
+
+                            archive[i].invasion_potential[e] = [fit, fitA, fitB]
+                        cm.__save_file(score_tradeOff, i, n_evals, sim_n)
+                n_evals += 1
+                print("Evaluation: ")
+                print(n_evals)
+                cm.__save_archive(archive, n_evals, sim_n)
+    return archive
+
+# TODO problem because then I do not know where they came from
+
+def compute_inv(max_evals=10,
+            k=0,
+            env_pair_dict=[],
+            seq_list=[],
+            sim=[],
+            params=cm.default_params):
+
+    print(params)
+
+    for sim_n in range(0, sim):
+        assert (len(seq_list) >= k)
+
+        # init archive (empty)
+        archive = {}
+        init = 0
+
+        # main loop
+        n_evals = 0 # number of evaluations
+        # TOD count the successes
+        while (n_evals < max_evals):
+            # If environment is empty fill with random individuals
+            if init == 0:
+                # Starting genome is the same for all env_pair
+                g = generate_genome(seq_list, k)
+                for i in env_pair_dict.keys():
+                    # Trajectory is initialized with first environment
+                    # Later new positions are appended
+                    trj = i
+                    # Same for position but this is the actual position
+                    pos = i
+                    # Generate fitness
+                    fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[i])
+                    #Genrate invasion_potential
+                    inv_pot = {}
+                    for e in env_pair_dict:
+                        fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[e])
+                        inv_pot[e] = [fit, fitA, fitB]
+                    # Pack traits and feature, make Ind and add to archive
+                    *to_gen_ind, = g, trj, fit, fitA, fitB, inv_pot, pos
+                    ind = make_ind_inv(to_gen_ind)
+                    add_to_archive(ind, archive)
+                    init = 1
+            else:
+                for i in archive.keys():
+                    start_g = archive[i].genome
+                    all_mut = generate_all_mutants(start_g)
+                    env = env_pair_dict[i]
+                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                    if mutated_genome != []:
+                        archive[i].genome = mutated_genome
+                    else:
+                        print("Runned out of beneficial mutation")
+                        print()
+                        print(archive[i].genome)
+                    archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[i])
+                    cm.__save_file(score_tradeOff, i, n_evals, sim_n)
+                n_evals += 1
+                print("Evaluation: ")
+                print(n_evals)
+                cm.__save_archive(archive, n_evals, sim_n)
+    return archive

@@ -1,5 +1,51 @@
 library(ggplot2)
+library(reshape)
 
+mut <- read.table("~/Documents/results/mut_traj_sim_.dat", quote="\"", comment.char="")
+
+t <- rep(0:1, times=3, each=1)
+
+mut <- cbind(mut, t)
+
+mdata <- melt(mut, id=c("V1", "t"))
+
+mdata_t <- mdata[mdata$t == 1,]
+
+mdata_f <- mdata[mdata$t == 0,]
+
+
+merge <- cbind(mdata_f, mdata_t)
+
+colnames(merge) <- c("envpair", "t", "var", "val", "V", "t2", "var2", "val2")
+
+
+
+ggplot(merge, aes(x=as.numeric(val), y = as.numeric(val2), color = envpair)) +
+  geom_line()
+
+ggplot(merge, aes(x=as.numeric(val), y = as.numeric(val2), color = envpair)) +
+  stat_smooth(method = lm) +
+  xlab("fitness in env pair 0.9") +
+  ylab("Mutational trade off")
+
+
+
+
+mdata$value <- as.numeric(mdata$value)
+
+mdata$variable <- as.numeric(mdata$variable)
+
+mdata$V1 <- as.factor(mdata$V1)
+
+rep(seq(0,1, 6))
+
+ggplot(mdata, aes(x=as.numeric(variable), y = value, color = V1 )) +
+  stat_smooth(method = lm)
+
+
+
+
+########################################
 
 dat_t <- read.table("~/Documents/results/tradeoff_sim_.dat", quote="\"", comment.char="")
 
