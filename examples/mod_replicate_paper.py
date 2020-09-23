@@ -53,6 +53,14 @@ from map_elites import common as cm
 
 params = cm.default_params
 
+# Seed MUST BE different from 0 (see gen_env)
+# For each sim generate random seed
+seed = params["seed"]
+l_n = params["l_n"]
+env_list = params["env_list"]
+sim = params["sim"]
+
+
 def environment_from_params(env_list_v, l_n, seed):
     example_env = env_list_v[len(env_list_v) - 1]
     envPair = generate_env.environmentPair(l_n, seed)
@@ -70,22 +78,20 @@ def environment_from_params(env_list_v, l_n, seed):
 
     return envList
 
+all_env_sim = []
 
-# Seed MUST BE different from 0 (see gen_env)
-# For each sim generate random seed
-seed = params["seed"]
-l_n = params["l_n"]
-env_list = params["env_list"]
+for i in range(0, sim):
+    new_seed = seed + i
+    envList = environment_from_params(env_list, l_n, new_seed)
+    env_pair_d = {}
+    for d, s in zip(env_list, envList):
+        env_pair_d[d] = s
+    all_env_sim.append(env_pair_d)
 
-envList = environment_from_params(env_list, l_n, seed)
+all_env_sim
+print()
 
-env_pair_d = {}
-
-for d, s in zip(env_list, envList):
-    env_pair_d[d] = s
-
-
-#Generate all possible combination
+#Generate all possible combination sequence for the genome build
 # 10 bits = 1024 env
 #With N = 4 => 16 sequences etc..
 seq_list = [bin(x)[2:].rjust(l_n, "0") for x in range(2**l_n)]
@@ -95,7 +101,6 @@ for i in range(len(seq_list)):
 
 #Is the n divisible by 4? 25% are 1
 assert(l_n % 4 == 0)
-
 seq_list = [i for i in seq_list if sum(i) == (l_n / 4)]
 
 

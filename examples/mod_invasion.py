@@ -53,6 +53,15 @@ from map_elites import common_invasion as cm
 
 params = cm.default_params
 
+# Seed MUST BE different from 0 (see gen_env)
+# For each sim generate random seed
+seed = params["seed"]
+l_n = params["l_n"]
+env_list = params["env_list"]
+sim = params["sim"]
+n_one = params['p1']
+
+
 def environment_from_params(env_list_v, l_n, seed):
     example_env = env_list_v[len(env_list_v) - 1]
     envPair = generate_env.environmentPair(l_n, seed)
@@ -70,19 +79,15 @@ def environment_from_params(env_list_v, l_n, seed):
 
     return envList
 
+all_env_sim = []
 
-# Seed MUST BE different from 0 (see gen_env)
-# For each sim generate random seed
-seed = params["seed"]
-l_n = params["l_n"]
-env_list = params["env_list"]
-
-envList = environment_from_params(env_list, l_n, seed)
-
-env_pair_d = {}
-
-for d, s in zip(env_list, envList):
-    env_pair_d[d] = s
+for i in range(0, 102 + 1):
+    new_seed = seed + i
+    envList = environment_from_params(env_list, l_n, new_seed)
+    env_pair_d = {}
+    for d, s in zip(env_list, envList):
+        env_pair_d[d] = s
+    all_env_sim.append(env_pair_d)
 
 
 #Generate all possible combination
@@ -94,14 +99,15 @@ for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
 #Is the n divisible by 4? 25% are 1
-assert(l_n % 2 == 0)
+#assert(l_n % n_one == 0)
+seq_list = [i for i in seq_list if sum(i) == n_one]
 
-seq_list = [i for i in seq_list if sum(i) == (l_n / 2)]
 
+#archive = mt_map_elites.compute_invasion(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+#           params=cm.default_params)
 
-archive = mt_map_elites.compute_invasion(max_evals=params["max_evals"], k=params["k"], env_pair_dict=env_pair_d, seq_list=seq_list, sim=params["sim"],
+archive = mt_map_elites.compute_versatility(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params)
-
 
 #new_archive = mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
 

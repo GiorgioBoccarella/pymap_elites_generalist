@@ -50,10 +50,10 @@ from collections import defaultdict
 default_params = \
     {
         "seed": 85,
-        "l_n": 24,
+        "l_n": 4,
         "env_list": [0.2, 0.5, 0.9, 1.1, 1.3],
         "k": 2,
-        "sim": 1,
+        "sim": 10,
         "max_evals": 450
     }
 

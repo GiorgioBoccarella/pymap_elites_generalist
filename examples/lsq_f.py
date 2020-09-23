@@ -176,11 +176,11 @@ if __name__=='__main__':
     if dres > 0.01:
         raise Exception('Error')
 
-    C = numpy.array([[1, 1],
-                     [1, 1],
-                     [1, 1]])
+    C = numpy.array([[1, 0, 1],
+                     [0, 0, 1],
+                     [0, 0, 0]])
 
-    d = numpy.array([0, 1])
+    d = numpy.array([1, 0, 1])
 
     [x, resnorm, residual] = lsqnonneg(C.T, d)
 
