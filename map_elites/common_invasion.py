@@ -45,25 +45,27 @@ import os
 
 default_params = \
     {
-        "seed": 7000,
+        "seed": 7800,
         "l_n": 24,
         "env_list": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4],
+        "env_transfer": [0.3, 0.9, 1.3],
         "k": 2,
-        "sim": 60,
-        "max_evals": 250,
-        "p1": 6
+        "sim": 100,
+        "max_evals": 50,
+        "p1": 6,
+        'invasion_rate': 0.5,
+        "mutation_rate": 0.1
     }
 
 
 class Ind:
-    def __init__(self, genome, trajectory, fitness, fit1, fit2, invasion_potential, position=None):
-        self.genome = genome
-        self.trajectory = trajectory
-        self.fitness = fitness
-        self.fit1 = fit1
-        self.fit2 = fit2
-        self.invasion_potential = invasion_potential
+    def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential):
         self.position = position
+        self.genome = genome
+        self.modularity = modularity
+        self.trade_off = trade_off
+        self.fitness = fitness
+        self.invasion_potential = invasion_potential
 
 
 
@@ -83,25 +85,19 @@ os.mkdir(folder)
 
 
 # format: fitness, centroid, desc, genome \n
-# fitness, centroid, desc and x are vectors
-def __save_archive(archive, gen, sim, trans):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
+def __save_archive(archive, gen, sim, transfer_in):
     filename = str(folder) + 'archive_sim_' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
+            f.write(str(k.position)+ ' ')
             f.write(str(k.fitness) + ' ')
-            f.write(str(k.fit1) + ' ')
-            f.write(str(k.fit2) + ' ')
-            #write_array(k.genome, f)
-            #f.write(str(k.trajectory))
-            f.write(str(k.position) + ' ')
+            f.write(str(k.modularity) + ' ')
+            f.write(str(k.trade_off) + ' ')
+            #for kk in k.invasion_potential.values():
+            #   write_array(np.array(kk), f)
             f.write(str(gen) + ' ')
-            for kk in k.invasion_potential.values():
-                write_array(np.array(kk), f)
             f.write(str(sim) + ' ')
-            f.write(str(trans) + " ")
+            f.write(str(transfer_in) + " ")
             f.write("\n")
 
 

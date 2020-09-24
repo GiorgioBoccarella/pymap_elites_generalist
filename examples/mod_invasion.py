@@ -81,7 +81,7 @@ def environment_from_params(env_list_v, l_n, seed):
 
 all_env_sim = []
 
-for i in range(0, 102 + 1):
+for i in range(0, sim + 2):
     new_seed = seed + i
     envList = environment_from_params(env_list, l_n, new_seed)
     env_pair_d = {}
