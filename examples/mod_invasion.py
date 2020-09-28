@@ -58,8 +58,7 @@ params = cm.default_params
 seed = params["seed"]
 l_n = params["l_n"]
 env_list = params["env_list"]
-sim = params["sim"]
-n_one = params['p1']
+
 
 
 def environment_from_params(env_list_v, l_n, seed):
@@ -81,7 +80,7 @@ def environment_from_params(env_list_v, l_n, seed):
 
 all_env_sim = []
 
-for i in range(0, sim + 2):
+for i in range(0, 100 + 2):
     new_seed = seed + i
     envList = environment_from_params(env_list, l_n, new_seed)
     env_pair_d = {}
@@ -100,15 +99,17 @@ for i in range(len(seq_list)):
 
 #Is the n divisible by 4? 25% are 1
 #assert(l_n % n_one == 0)
-seq_list = [i for i in seq_list if sum(i) == n_one]
+#seq_list = [i for i in seq_list if sum(i) == n_one]
 
-
+print("Sequences Generated")
 #archive = mt_map_elites.compute_invasion(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
 #           params=cm.default_params)
 
 archive = mt_map_elites.compute_versatility(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
-            params=cm.default_params)
+            params=cm.default_params_1)
 
-#new_archive = mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
 
-#mt_map_elites.compute_mut(archive, env_pair_d, steps=20)
+archive = mt_map_elites.compute_versatility(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+            params=cm.default_params_2)
+
+print("DONE")

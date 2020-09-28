@@ -42,30 +42,110 @@ import math
 import numpy as np
 import os
 
-
 default_params = \
     {
-        "seed": 7800,
+        "seed": 10,
         "l_n": 24,
-        "env_list": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4],
-        "env_transfer": [0.3, 0.9, 1.3],
+        "env_list": [0.3, 0.9, 1.3],
+        "max_evals": 250,
         "k": 2,
-        "sim": 100,
-        "max_evals": 50,
-        "p1": 6,
+        "sim": 40
+    }
+
+default_params_1 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 1,
+        'invasion_rate': 0.5,
+        "mutation_rate": 0.1
+    }
+
+default_params_2 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 23,
         'invasion_rate': 0.5,
         "mutation_rate": 0.1
     }
 
 
+default_params_3 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 23,
+        'invasion_rate': 0.5,
+        "mutation_rate": 0.1
+    }
+
+
+default_params_4 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 23,
+        'invasion_rate': 1,
+        "mutation_rate": 0.1
+    }
+
+
+default_params_5 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 23,
+        'invasion_rate': 0.05,
+        "mutation_rate": 0.1
+    }
+
+
+
+default_params_6 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 1,
+        'invasion_rate': 1,
+        "mutation_rate": 0.1
+    }
+
+
+default_params_7 = \
+    {
+        "seed": 10,
+        "l_n": 24,
+        "env_list": [0.3, 0.9, 1.3],
+        "env_transfer": [0.3, 0.9, 1.3],
+        "p1": 1,
+        'invasion_rate': 0.05,
+        "mutation_rate": 0.1
+    }
+
+
 class Ind:
-    def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential):
+    def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential, sum_p0, sum_p1):
         self.position = position
         self.genome = genome
         self.modularity = modularity
         self.trade_off = trade_off
         self.fitness = fitness
         self.invasion_potential = invasion_potential
+        self.sum_p0 = sum_p0
+        self.sum_p1 = sum_p1
 
 
 
@@ -80,12 +160,11 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
     return list(s_list)
 
 # define the name of the directory to be created
-folder = "/home/giorg/Documents/results/versatility_slow_data_seed" + str(default_params["seed"]) + "_K" + str(default_params["k"]) + "_P" + str(default_params["p1"]) + "/"
-os.mkdir(folder)
-
+folder = "/home/giorg/Documents/lucky_mut_equal_probability_1/"
+#os.mkdir(folder)
 
 # format: fitness, centroid, desc, genome \n
-def __save_archive(archive, gen, sim, transfer_in):
+def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
     filename = str(folder) + 'archive_sim_' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
@@ -95,9 +174,14 @@ def __save_archive(archive, gen, sim, transfer_in):
             f.write(str(k.trade_off) + ' ')
             #for kk in k.invasion_potential.values():
             #   write_array(np.array(kk), f)
+            f.write(str(k.sum_p0) + ' ')
+            f.write(str(k.sum_p1) + ' ')
             f.write(str(gen) + ' ')
             f.write(str(sim) + ' ')
             f.write(str(transfer_in) + " ")
+            f.write(str(inv_rate) + " ")
+            f.write(str(inv) + " ")
+            f.write(str(p) + " ")
             f.write("\n")
 
 
@@ -173,13 +257,19 @@ def __save_file_mut(vec_mut, vec_off):
             f.write("\n")
 
 
-def __save_file_mig(invader, wild, epoch, sim):
+def __save_file_mig(invader, wild, epoch, sim, inv_rate, p, sum_p0_invader, sum_p1_invader, sum_p0_wild, sum_p1_wild):
     filename = str(folder) + 'invasion_id' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(invader) + " ")
         f.write(str(wild) + " ")
         f.write(str(epoch) + " ")
         f.write(str(sim) + " ")
+        f.write(str(inv_rate) + " ")
+        f.write(str(p) + " ")
+        f.write(str(sum_p0_invader) + " ")
+        f.write(str(sum_p1_invader) + " ")
+        f.write(str(sum_p0_wild) + " ")
+        f.write(str(sum_p1_wild) + " ")
         f.write("\n")
 
 
@@ -187,6 +277,8 @@ def save_params(params):
     filename = str(folder) + 'params' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(params) + " ")
+        f.write('\n')
+
 
 def save_env(env, sim):
     def write_array(a, f):

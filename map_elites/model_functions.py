@@ -131,8 +131,8 @@ def make_ind(t):
 
 
 def make_ind_inv(t):
-    pos, g,  mod, trade, f, inv_pot = t
-    return cm.Ind(pos, g, mod, trade, f, inv_pot)
+    pos, g,  mod, trade, f, inv_pot, sum_p0, sum_p1 = t
+    return cm.Ind(pos, g, mod, trade, f, inv_pot, sum_p0, sum_p1)
 
 
 def add_to_archive(pos, ind, archive):
@@ -247,15 +247,25 @@ def score_Modularity(s_genome, all_g, env):
     return modularity
 
 
+def sum_p_genome(genome):
+
+    sum_p_0 = sum(genome[0])
+    sum_p_1 = sum(genome[1])
+
+    return sum_p_0, sum_p_1
+
+
 def compute_versatility(max_evals=10,
             k=0,
             env_pair_dict_l=[],
             seq_list=[],
             sim=[],
-            params=cm.default_params):
+            params=[]):
 
     print(params)
     cm.save_params(params)
+
+    seq_list = [i for i in seq_list if sum(i) == params["p1"]]
 
     for sim_n in range(0, sim):
         print("Sim: ", sim_n)
@@ -292,7 +302,8 @@ def compute_versatility(max_evals=10,
                     score_mod = score_Modularity(g, all_mut, env)
                     pos = i
                     # Pack traits and feature, make Ind and add to archive
-                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot
+                    sum_p0, sum_p1 = sum_p_genome(g)
+                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1,
                     ind = make_ind_inv(to_gen_ind)
                     add_to_archive(pos, ind, archive)
                     init = 1
@@ -305,6 +316,7 @@ def compute_versatility(max_evals=10,
                         invader = archive[ind]
                         wild_type = archive[coordinates[0]]
 
+
                         inv_f = invader.invasion_potential[coordinates[0]]
                         w_f = wild_type.invasion_potential[coordinates[0]]
                         env_inv = 0
@@ -313,7 +325,7 @@ def compute_versatility(max_evals=10,
                             archive[coordinates[0]] = copy.deepcopy(archive[ind])
                             archive[coordinates[0]].position = coordinates[0]
                             #If invasion is succesfull then save it
-                            cm.__save_file_mig(ind, coordinates[0], n_evals, sim_n)
+                            cm.__save_file_mig(ind, coordinates[0], n_evals, sim_n, params['invasion_rate'], params["p1"], invader.sum_p0, invader.sum_p1, wild_type.sum_p0, wild_type.sum_p1)
             if n_evals < max_evals + 1:
                 for i in archive.keys():
                     start_g = archive[i].genome
@@ -334,13 +346,20 @@ def compute_versatility(max_evals=10,
                     #Save the trade_off and modularity score
                     archive[i].trade_off = score_tradeOff
                     archive[i].modularity = score_mod
-            cm.__save_archive(archive, n_evals, sim_n, 0)
+                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
+                    inv = 0
+                    if sim_n > (sim / 2) - 1:
+                        inv = 1
+            cm.__save_archive(archive, n_evals, sim_n, 0, params['invasion_rate'], inv, params["p1"])
             n_evals += 1
             print("Sim: ", sim_n, "Step: ", n_evals)
 
+        archive_c = archive.copy()
+
         for transf in params["env_transfer"]:
-            n_evals = params["max_evals"] + 1
-            max = (n_evals*2)
+            archive = archive_c.copy()
+            n_evals = max_evals + 1
+            max = n_evals + 50
             while n_evals < max:
                 for i in archive.keys():
                     start_g = archive[i].genome
@@ -348,11 +367,9 @@ def compute_versatility(max_evals=10,
                     env = env_pair_dict[transf]
                     score_tradeOff = scoreTradeOff(start_g, all_mut, env)
                     score_mod = score_Modularity(start_g, all_mut, env)
-                    mutation = np.random.binomial(1, params['mutation_rate'], 1)
-                    if mutation == True:
-                        mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                        if mutated_genome != []:
-                            archive[i].genome = mutated_genome
+                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                    if mutated_genome != []:
+                        archive[i].genome = mutated_genome
                     archive[i].fitness = env_pair_fitness(archive[i].genome, env)
                     # Here calculate invasion potential
                     for e in env_pair_dict.keys():
@@ -361,7 +378,8 @@ def compute_versatility(max_evals=10,
                     # Save the trade_off and modularity score
                     archive[i].trade_off = score_tradeOff
                     archive[i].modularity = score_mod
-                cm.__save_archive(archive, n_evals, sim_n, transf)
+                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
+                cm.__save_archive(archive, n_evals, sim_n, transf, params['invasion_rate'], inv, params["p1"])
                 n_evals += 1
                 print("Sim: ", sim_n, "Step_replicate: ", n_evals)
     return archive
@@ -372,69 +390,3 @@ def compute_versatility(max_evals=10,
 
 
 
-
-
-
-
-def compute_inv(max_evals=10,
-            k=0,
-            env_pair_dict=[],
-            seq_list=[],
-            sim=[],
-            params=cm.default_params):
-
-    print(params)
-
-    for sim_n in range(0, sim):
-        assert (len(seq_list) >= k)
-
-        # init archive (empty)
-        archive = {}
-        init = 0
-
-        # main loop
-        n_evals = 0 # number of evaluations
-        # TOD count the successes
-        while (n_evals < max_evals):
-            # If environment is empty fill with random individuals
-            if init == 0:
-                # Starting genome is the same for all env_pair
-                g = generate_genome(seq_list, k)
-                for i in env_pair_dict.keys():
-                    # Trajectory is initialized with first environment
-                    # Later new positions are appended
-                    trj = i
-                    # Same for position but this is the actual position
-                    pos = i
-                    # Generate fitness
-                    fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[i])
-                    #Genrate invasion_potential
-                    inv_pot = {}
-                    for e in env_pair_dict:
-                        fit, fitA, fitB = env_pair_fitness(g, env_pair_dict[e])
-                        inv_pot[e] = [fit, fitA, fitB]
-                    # Pack traits and feature, make Ind and add to archive
-                    *to_gen_ind, = g, trj, fit, fitA, fitB, inv_pot, pos
-                    ind = make_ind_inv(to_gen_ind)
-                    add_to_archive(ind, archive)
-                    init = 1
-            else:
-                for i in archive.keys():
-                    start_g = archive[i].genome
-                    all_mut = generate_all_mutants(start_g)
-                    env = env_pair_dict[i]
-                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                    if mutated_genome != []:
-                        archive[i].genome = mutated_genome
-                    else:
-                        print("Runned out of beneficial mutation")
-                        print()
-                        print(archive[i].genome)
-                    archive[i].fitness, archive[i].fit1, archive[i].fit2 = env_pair_fitness(archive[i].genome, env_pair_dict[i])
-                    cm.__save_file(score_tradeOff, i, n_evals, sim_n)
-                n_evals += 1
-                print("Evaluation: ")
-                print(n_evals)
-                cm.__save_archive(archive, n_evals, sim_n)
-    return archive
