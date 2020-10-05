@@ -38,11 +38,8 @@
 #| had knowledge of the CeCILL license and that you accept its terms.
 #
 
-import math
-import numpy as np
-import os
+# Default params are general for all simulation
 
-# Defult params are general for all simulation
 default_params = \
     {
         "seed": 120,
@@ -90,8 +87,9 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
     return list(s_list)
 
 # define the name of the directory to be created
+# Usually make the folder in advance so they can concatenate
 folder = "/home/giorg/Documents/test_effect_K/"
-#os.mkdir(folder)
+# os.mkdir(folder)
 
 # format: fitness, centroid, desc, genome \n
 def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
@@ -116,76 +114,6 @@ def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
             f.write("\n")
 
 
-def __save_archive_last(archive, gen, sim):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
-    filename = str(folder) + 'archive_sim_last_gen' + '.dat'
-    with open(filename, 'a+') as f:
-        for k in archive.values():
-            f.write(str(k.fitness) + ' ')
-            f.write(str(k.fit1) + ' ')
-            f.write(str(k.fit2) + ' ')
-            #write_array(k.genome, f)
-            #f.write(str(k.trajectory))
-            f.write(str(k.position) + ' ')
-            f.write(str(gen) + ' ')
-            for kk in k.invasion_potential.values():
-                write_array(np.array(kk), f)
-            f.write("\n")
-
-
-def __save_archive_last_traj(archive, gen, sim):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
-    filename = str(folder) + 'archive_sim_last_gen_traj' + '.dat'
-    with open(filename, 'a+') as f:
-        for k in archive.values():
-            f.write(str(k.position) + ' ')
-            f.write(str(sim) + " ")
-            write_array(np.array(k.trajectory), f)
-            f.write("\n")
-
-
-def __save_archive_inv(archive, gen, sim):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
-    filename = str(folder) + 'archive_invasion_data' + '.dat'
-    with open(filename, 'a+') as f:
-        for k in archive.values():
-            for kk in k.invasion_potential.values():
-                f.write(str(k) + " ")
-                f.write(str(kk) + " ")
-
-
-def __save_file(tradeoff, mod, fit, env,  gen, sim, env_transf):
-    filename = str(folder) + 'tradeoff_mod_sim_' + '.dat'
-    with open(filename, 'a+') as f:
-        f.write(str(tradeoff) + ' ')
-        f.write(str(mod) + ' ')
-        f.write(str(fit) + " ")
-        f.write(str(env) + ' ')
-        f.write(str(gen) + ' ')
-        f.write(str(sim) + " ")
-        f.write(str(env_transf) + " ")
-        f.write("\n")
-
-
-def __save_file_mut(vec_mut, vec_off):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
-    filename = str(folder) + 'archive_sim_mutants' + '.dat'
-    with open(filename, 'a+') as f:
-        for k in vec_mut:
-            f.write(str(k) + " ")
-            write_array(vec_mut[k], f)
-            f.write("\n")
-            f.write(str(k) + "t ")
-            write_array(vec_off[k], f)
-            f.write("\n")
 
 
 def __save_file_mig(invader, wild, epoch, sim, inv_rate, ips, wps, sum_p0_invader, sum_p1_invader, sum_p0_wild, sum_p1_wild):
@@ -213,9 +141,6 @@ def save_params(params):
 
 
 def save_env(env, sim):
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
     filename = str(folder) + 'env_list' + '.dat'
     with open(filename, 'a+') as f:
         for k in env.values():
