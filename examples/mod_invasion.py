@@ -80,7 +80,7 @@ def environment_from_params(env_list_v, l_n, seed):
 
 all_env_sim = []
 
-for i in range(0, 100 + 2):
+for i in range(0, params["sim"] + 2):
     new_seed = seed + i
     envList = environment_from_params(env_list, l_n, new_seed)
     env_pair_d = {}
@@ -88,28 +88,22 @@ for i in range(0, 100 + 2):
         env_pair_d[d] = s
     all_env_sim.append(env_pair_d)
 
-
-#Generate all possible combination
+print('Generating sequences')
+# Generate all possible combination
 # 10 bits = 1024 env
-#With N = 4 => 16 sequences etc..
+# With N = 4 => 16 sequences etc..
 seq_list = [bin(x)[2:].rjust(l_n, "0") for x in range(2**l_n)]
-#From string to binary
+# From string to binary
 for i in range(len(seq_list)):
     seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
 
-#Is the n divisible by 4? 25% are 1
-#assert(l_n % n_one == 0)
-#seq_list = [i for i in seq_list if sum(i) == n_one]
 
-print("Sequences Generated")
-#archive = mt_map_elites.compute_invasion(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
-#           params=cm.default_params)
+print('Sequences Generated')
+
+# The file concatenates the simulation output so is possible to concatenate in a single file
 
 archive = mt_map_elites.compute_versatility(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params_1)
 
 
-archive = mt_map_elites.compute_versatility(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
-            params=cm.default_params_2)
-
-print("DONE")
+print("Simulation end")

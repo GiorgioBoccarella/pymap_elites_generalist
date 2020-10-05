@@ -50,15 +50,16 @@ from examples import lsq_f
 
 import copy
 
-def generate_genome(sequences, k):
+def generate_genome(sequences, k, p):
     """Generates genome with certain K size, the L depends on the length of the sequences"""
     #assert(len(sequences) >= k)
-    l = len(sequences[0])
+    seq_list = [i for i in sequences if sum(i) == p]
+    l = len(seq_list[0])
     g = np.empty([k, l], dtype=bool)
-    sel_id = np.random.choice(len(sequences), k, replace=False)
+    sel_id = np.random.choice(len(seq_list), k, replace=False)
     j = 0
     for seq in sel_id:
-        g[j] = sequences[seq]
+        g[j] = seq_list[seq]
         j += 1
     return g
 
@@ -125,19 +126,22 @@ def gen_lucky_mut(s_genome, all_g, env):
     return mut_genome
 
 
-def make_ind(t):
-    g, trj, f, f1, f2, pos = t
-    return cm.Ind(g, trj, f, f1, f2, pos)
-
-
 def make_ind_inv(t):
-    pos, g,  mod, trade, f, inv_pot, sum_p0, sum_p1 = t
-    return cm.Ind(pos, g, mod, trade, f, inv_pot, sum_p0, sum_p1)
+    pos, g,  mod, trade, f, inv_pot, sum_p0, sum_p1, ps = t
+    return cm.Ind(pos, g, mod, trade, f, inv_pot, sum_p0, sum_p1, ps)
 
 
 def add_to_archive(pos, ind, archive):
     archive[pos] = ind
     return 1
+
+
+def sum_p_genome(genome):
+
+    sum_p_0 = sum(genome[0])
+    sum_p_1 = sum(genome[1])
+
+    return sum_p_0, sum_p_1
 
 
 def env_pair_fitness(genome, env_pair):
@@ -204,7 +208,8 @@ def scoreTradeOff(s_genome, all_g, env):
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
     phi = np.arctan2(y, x)
-    return(rho, phi)
+
+    return rho, phi
 
 
 def score_Modularity(s_genome, all_g, env):
@@ -247,15 +252,7 @@ def score_Modularity(s_genome, all_g, env):
     return modularity
 
 
-def sum_p_genome(genome):
-
-    sum_p_0 = sum(genome[0])
-    sum_p_1 = sum(genome[1])
-
-    return sum_p_0, sum_p_1
-
-
-def compute_versatility(max_evals=10,
+def compute_invasion_transfer(max_evals=10,
             k=0,
             env_pair_dict_l=[],
             seq_list=[],
@@ -265,15 +262,13 @@ def compute_versatility(max_evals=10,
     print(params)
     cm.save_params(params)
 
-    seq_list = [i for i in seq_list if sum(i) == params["p1"]]
-
     for sim_n in range(0, sim):
         print("Sim: ", sim_n)
-        #The environment pairs are assigned from outside compute function
+        # The environment pairs are assigned from outside compute function
         env_pair_dict = env_pair_dict_l[sim_n]
         cm.save_env(env_pair_dict, sim_n)
 
-        #This is the random seed for mutations
+        # This is the random seed for mutations
         np.random.seed(sim_n + params["seed"] + 4)
 
         # init archive (empty)
@@ -282,12 +277,15 @@ def compute_versatility(max_evals=10,
 
         # main loop
         n_evals = 0  # number of evaluations
-        while (n_evals < max_evals + 1):
+        while n_evals < max_evals + 1:
             # If environment is empty fill with random individuals
             if init == 0:
-                # Starting genome is the same for all env_pair
-                g = generate_genome(seq_list, k)
+                j = 0
+                # p is the initial P1 in the genome for each lineage
+                # if p is the same then modify to int ands not array
+                p = np.array(params['p_list'])
                 for i in env_pair_dict.keys():
+                    g = generate_genome(seq_list, k, p[j])
                     # Generate fitness
                     fit = env_pair_fitness(g, env_pair_dict[i])
                     #Genrate invasion_potential
@@ -295,7 +293,7 @@ def compute_versatility(max_evals=10,
                     for e in env_pair_dict:
                         fit = env_pair_fitness(g, env_pair_dict[e])
                         inv_pot[e] = [fit]
-                    #Score starting feature of the genome gen 0
+                    #Score starting feature of the genome g
                     all_mut = generate_all_mutants(g)
                     env = env_pair_dict[i]
                     score_tradeOff = scoreTradeOff(g, all_mut, env)
@@ -303,10 +301,14 @@ def compute_versatility(max_evals=10,
                     pos = i
                     # Pack traits and feature, make Ind and add to archive
                     sum_p0, sum_p1 = sum_p_genome(g)
-                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1,
+                    ps = sum_p0
+                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1, ps
                     ind = make_ind_inv(to_gen_ind)
                     add_to_archive(pos, ind, archive)
-                    init = 1
+                    j += 1
+                init = 1
+            # If we want to look at the effect of the mutations then params['invasion_rate'] > 0
+            # Generally if 20 simulations I do 10 with invasion and 10 without to have a control
             else:
                 invasion = np.random.binomial(1, params['invasion_rate'], 1)
                 if invasion == True and sim_n > (sim/2) - 1:
@@ -325,7 +327,7 @@ def compute_versatility(max_evals=10,
                             archive[coordinates[0]] = copy.deepcopy(archive[ind])
                             archive[coordinates[0]].position = coordinates[0]
                             #If invasion is succesfull then save it
-                            cm.__save_file_mig(ind, coordinates[0], n_evals, sim_n, params['invasion_rate'], params["p1"], invader.sum_p0, invader.sum_p1, wild_type.sum_p0, wild_type.sum_p1)
+                            cm.__save_file_mig(ind, coordinates[0], n_evals, sim_n, params['invasion_rate'], invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1, wild_type.sum_p0, wild_type.sum_p1)
             if n_evals < max_evals + 1:
                 for i in archive.keys():
                     start_g = archive[i].genome
@@ -339,49 +341,53 @@ def compute_versatility(max_evals=10,
                         if mutated_genome != []:
                             archive[i].genome = mutated_genome
                     archive[i].fitness = env_pair_fitness(archive[i].genome, env)
-                    #Here calculate invasion potential
-                    for e in env_pair_dict.keys():
-                        fit = env_pair_fitness(archive[i].genome, env_pair_dict[e])
-                        archive[i].invasion_potential[e] = [fit]
+                    # Here calculate invasion potential (only if invasion is activated, otherwise is not used)
+                    if sim_n > (sim / 2) - 1:
+                        for e in env_pair_dict.keys():
+                            fit = env_pair_fitness(archive[i].genome, env_pair_dict[e])
+                            archive[i].invasion_potential[e] = [fit]
                     #Save the trade_off and modularity score
                     archive[i].trade_off = score_tradeOff
                     archive[i].modularity = score_mod
                     archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
                     inv = 0
                     if sim_n > (sim / 2) - 1:
+                        # This is useful just for the data output and plotting
                         inv = 1
             cm.__save_archive(archive, n_evals, sim_n, 0, params['invasion_rate'], inv, params["p1"])
             n_evals += 1
             print("Sim: ", sim_n, "Step: ", n_evals)
-
-        archive_c = archive.copy()
-
-        for transf in params["env_transfer"]:
-            archive = archive_c.copy()
-            n_evals = max_evals + 1
-            max = n_evals + 50
-            while n_evals < max:
-                for i in archive.keys():
-                    start_g = archive[i].genome
-                    all_mut = generate_all_mutants(start_g)
-                    env = env_pair_dict[transf]
-                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                    score_mod = score_Modularity(start_g, all_mut, env)
-                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                    if mutated_genome != []:
-                        archive[i].genome = mutated_genome
-                    archive[i].fitness = env_pair_fitness(archive[i].genome, env)
-                    # Here calculate invasion potential
-                    for e in env_pair_dict.keys():
-                        fit = env_pair_fitness(archive[i].genome, env_pair_dict[e])
-                        archive[i].invasion_potential[e] = [fit]
-                    # Save the trade_off and modularity score
-                    archive[i].trade_off = score_tradeOff
-                    archive[i].modularity = score_mod
-                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
-                cm.__save_archive(archive, n_evals, sim_n, transf, params['invasion_rate'], inv, params["p1"])
-                n_evals += 1
-                print("Sim: ", sim_n, "Step_replicate: ", n_evals)
+            # At specific time point specified in params['transfer'] the linage are tested outside the environment
+            # in which they are evolving in. (Useful for arrow plot)
+            if n_evals in params['transfer']:
+                for transf in params["env_transfer"]:
+                    archive_t = copy.deepcopy(archive)
+                    n_evals_t = n_evals
+                    max = n_evals_t + 21
+                    cm.__save_archive(archive_t, n_evals_t, sim_n, transf, params['invasion_rate'], inv, params["p1"])
+                    n_evals_t = n_evals_t + 1
+                    while n_evals_t < max:
+                        for i in archive_t.keys():
+                            start_g = archive_t[i].genome
+                            all_mut = generate_all_mutants(start_g)
+                            env = env_pair_dict[transf]
+                            score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                            score_mod = score_Modularity(start_g, all_mut, env)
+                            mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                            if mutated_genome != []:
+                                archive_t[i].genome = mutated_genome
+                            archive_t[i].fitness = env_pair_fitness(archive_t[i].genome, env)
+                            # Here calculate invasion potential
+                            for e in env_pair_dict.keys():
+                                fit = env_pair_fitness(archive_t[i].genome, env_pair_dict[e])
+                                archive_t[i].invasion_potential[e] = [fit]
+                            # Save the trade_off and modularity score
+                            archive_t[i].trade_off = score_tradeOff
+                            archive_t[i].modularity = score_mod
+                            archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
+                        cm.__save_archive(archive_t, n_evals_t, sim_n, transf, params['invasion_rate'], inv, params["p1"])
+                        n_evals_t += 1
+                        print("Sim: ", sim_n, "Step_replicate: ", n_evals_t, " env_tras: ", transf)
     return archive
 
 

@@ -42,102 +42,31 @@ import math
 import numpy as np
 import os
 
+# Defult params are general for all simulation
 default_params = \
     {
-        "seed": 10,
+        "seed": 120,
         "l_n": 24,
         "env_list": [0.3, 0.9, 1.3],
-        "max_evals": 250,
-        "k": 2,
-        "sim": 40
+        "max_evals": 450,
+        "k": 6,
+        "sim": 6
     }
 
 default_params_1 = \
     {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
         "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
-        'invasion_rate': 0.5,
-        "mutation_rate": 0.1
-    }
-
-default_params_2 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 0.5,
-        "mutation_rate": 0.1
-    }
-
-
-default_params_3 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 0.5,
-        "mutation_rate": 0.1
-    }
-
-
-default_params_4 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
+        "p1": 6,
         'invasion_rate': 1,
-        "mutation_rate": 0.1
+        "mutation_rate": 0.1,
+        'transfer': [50, 100, 150, 200, 250, 300],
+        "p_list": [6, 6, 6]
     }
 
-
-default_params_5 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 0.05,
-        "mutation_rate": 0.1
-    }
-
-
-
-default_params_6 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
-        'invasion_rate': 1,
-        "mutation_rate": 0.1
-    }
-
-
-default_params_7 = \
-    {
-        "seed": 10,
-        "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
-        'invasion_rate': 0.05,
-        "mutation_rate": 0.1
-    }
 
 
 class Ind:
-    def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential, sum_p0, sum_p1):
+    def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential, sum_p0, sum_p1, ps):
         self.position = position
         self.genome = genome
         self.modularity = modularity
@@ -146,6 +75,7 @@ class Ind:
         self.invasion_potential = invasion_potential
         self.sum_p0 = sum_p0
         self.sum_p1 = sum_p1
+        self.ps = ps
 
 
 
@@ -160,7 +90,7 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
     return list(s_list)
 
 # define the name of the directory to be created
-folder = "/home/giorg/Documents/lucky_mut_equal_probability_1/"
+folder = "/home/giorg/Documents/test_effect_K/"
 #os.mkdir(folder)
 
 # format: fitness, centroid, desc, genome \n
@@ -176,6 +106,7 @@ def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
             #   write_array(np.array(kk), f)
             f.write(str(k.sum_p0) + ' ')
             f.write(str(k.sum_p1) + ' ')
+            f.write(str(k.ps) + ' ')
             f.write(str(gen) + ' ')
             f.write(str(sim) + ' ')
             f.write(str(transfer_in) + " ")
@@ -257,7 +188,7 @@ def __save_file_mut(vec_mut, vec_off):
             f.write("\n")
 
 
-def __save_file_mig(invader, wild, epoch, sim, inv_rate, p, sum_p0_invader, sum_p1_invader, sum_p0_wild, sum_p1_wild):
+def __save_file_mig(invader, wild, epoch, sim, inv_rate, ips, wps, sum_p0_invader, sum_p1_invader, sum_p0_wild, sum_p1_wild):
     filename = str(folder) + 'invasion_id' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(invader) + " ")
@@ -265,7 +196,8 @@ def __save_file_mig(invader, wild, epoch, sim, inv_rate, p, sum_p0_invader, sum_
         f.write(str(epoch) + " ")
         f.write(str(sim) + " ")
         f.write(str(inv_rate) + " ")
-        f.write(str(p) + " ")
+        f.write(str(ips) + " ")
+        f.write(str(wps) + " ")
         f.write(str(sum_p0_invader) + " ")
         f.write(str(sum_p1_invader) + " ")
         f.write(str(sum_p0_wild) + " ")
