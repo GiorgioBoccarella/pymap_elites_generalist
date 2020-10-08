@@ -44,115 +44,51 @@ default_params = \
     {
         "seed": 120,
         "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "max_evals": 35,
+        "env_list": [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.9, 1.3],
+        "max_evals": 350,
         "k": 2,
-        "sim": 50
+        "sim": 100
     }
-
-
 
 default_params_1 = \
     {
-        "seed": 10,
         "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 13,
+        "p1": 1,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [10, 15],
-        'n_invasion': 20
+        "mutation_rate": 0.1,
+        'transfer': [50, 100, 150, 200, 250, 300],
+         # "p_list": [6, 6, 6]
     }
 
 default_params_2 = \
     {
-        "seed": 10,
         "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
+        "p1": 6,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [10, 20, 35],
-        'n_invasion': 20
+        "mutation_rate": 0.1,
+        'transfer': [50, 100, 150, 200, 250, 300],
+         # "p_list": [6, 6, 6]
     }
-
 
 default_params_3 = \
     {
-        "seed" : 10,
         "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
+        "p1": 12,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 10
+        "mutation_rate": 0.1,
+        'transfer': [50, 100, 150, 200, 250, 300],
          # "p_list": [6, 6, 6]
     }
 
 default_params_4 = \
     {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 1
-         # "p_list": [6, 6, 6]
-    }
-
-
-
-default_params_5 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 5
-         # "p_list": [6, 6, 6]
-    }
-
-
-default_params_6 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion': 10
-         # "p_list": [6, 6, 6]
-    }
-
-
-
-default_params_7 = \
-    {
-        "seed" : 10,
         "env_transfer": [0.3, 0.9, 1.3],
         "p1": 23,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 5
+        "mutation_rate": 0.1,
+        'transfer': [50, 100, 150, 200, 250, 300],
          # "p_list": [6, 6, 6]
     }
-
-default_params_8 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 10
-         # "p_list": [6, 6, 6]
-    }
-
-
 
 
 
@@ -182,15 +118,15 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 # define the name of the directory to be created
 # Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/clustered_sim/test_effect_K_p_changes_transf_long/"
+folder = "/home/giorg/Documents/clustered_sim/test_effect_K/"
 # os.mkdir(folder)
 
 # format: fitness, centroid, desc, genome \n
-def __save_archive(archive, gen, sim, transfer_in, transf_n, inv_rate, inv, p):
+def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
     filename = str(folder) + 'archive_sim_' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
-            f.write(str(k.position) + ' ')
+            f.write(str(k.position)+ ' ')
             f.write(str(k.fitness) + ' ')
             f.write(str(k.modularity) + ' ')
             f.write(str(k.trade_off) + ' ')
@@ -202,7 +138,6 @@ def __save_archive(archive, gen, sim, transfer_in, transf_n, inv_rate, inv, p):
             f.write(str(gen) + ' ')
             f.write(str(sim) + ' ')
             f.write(str(transfer_in) + " ")
-            f.write(str(transf_n) + " ")
             f.write(str(inv_rate) + " ")
             f.write(str(inv) + " ")
             f.write(str(p) + " ")

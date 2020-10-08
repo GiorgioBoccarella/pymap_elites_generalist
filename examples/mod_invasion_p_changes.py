@@ -48,7 +48,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import map_elites.model_functions as mt_map_elites
 
 from examples import generate_env
-from map_elites import common_invasion as cm
+from map_elites import common_invasion_p_changes as cm
 
 
 params = cm.default_params
@@ -102,9 +102,11 @@ print('Sequences Generated')
 
 # The file concatenates the simulation output so is possible to concatenate in a single file
 
-# This is necessary to observe how invasion affects evolutionary trajectory
+# This is necessary to observe how
 
-mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+mt_map_elites.compute_invasion_transfer_p_different(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params_1)
+
+
 
 print("Simulation end")

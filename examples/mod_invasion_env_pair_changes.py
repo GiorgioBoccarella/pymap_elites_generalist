@@ -48,7 +48,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import map_elites.model_functions as mt_map_elites
 
 from examples import generate_env
-from map_elites import common_invasion as cm
+from map_elites import common_invasion_env_pair_changes as cm
 
 
 params = cm.default_params
@@ -88,7 +88,7 @@ for i in range(0, params["sim"] + 2):
         env_pair_d[d] = s
     all_env_sim.append(env_pair_d)
 
-print('Generating sequences...')
+print('Generating sequences')
 # Generate all possible combination
 # 10 bits = 1024 env
 # With N = 4 => 16 sequences etc..
@@ -106,5 +106,15 @@ print('Sequences Generated')
 
 mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params_1)
+
+mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+            params=cm.default_params_2)
+
+mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+            params=cm.default_params_3)
+
+mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
+            params=cm.default_params_4)
+
 
 print("Simulation end")
