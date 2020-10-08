@@ -80,9 +80,9 @@ def environment_from_params(env_list_v, l_n, seed):
 
 all_env_sim = []
 
-for i in range(0, params["sim"] + 2):
+for i in range(0, 20 + 2):
     new_seed = seed + i
-    envList = environment_from_params(env_list, l_n, new_seed)
+    envList = environment_from_params(env_list, 150, new_seed)
     env_pair_d = {}
     for d, s in zip(env_list, envList):
         env_pair_d[d] = s
@@ -92,10 +92,7 @@ print('Generating sequences...')
 # Generate all possible combination
 # 10 bits = 1024 env
 # With N = 4 => 16 sequences etc..
-seq_list = [bin(x)[2:].rjust(l_n, "0") for x in range(2**l_n)]
-# From string to binary
-for i in range(len(seq_list)):
-    seq_list[i] = [int(numeric_string) for numeric_string in seq_list[i]]
+seq_list = 0
 
 
 print('Sequences Generated')
@@ -106,5 +103,6 @@ print('Sequences Generated')
 
 mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
             params=cm.default_params_1)
+
 
 print("Simulation end")

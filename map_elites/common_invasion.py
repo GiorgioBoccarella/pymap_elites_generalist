@@ -44,48 +44,44 @@ default_params = \
     {
         "seed": 120,
         "l_n": 24,
-        "env_list": [0.3, 0.9, 1.3],
-        "max_evals": 35,
+        "env_list": [0.1, 0.3, 0.9, 1.3],
+        "max_evals": 400,
         "k": 2,
-        "sim": 50
+        "sim": 60
     }
 
 
 
 default_params_1 = \
     {
-        "seed": 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 13,
+        "seed": 740,
+        "env_transfer": [0.3, 1.3],
+        "p1": 1,
         'invasion_rate': 1,
         "mutation_rate": 1,
-        'transfer': [10, 15],
-        'n_invasion': 20
+        'n_invasion': 50
     }
 
 default_params_2 = \
     {
-        "seed": 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
+        "seed": 750,
+        "env_transfer": [0.3, 1.3],
+        "p1": 12,
         'invasion_rate': 1,
         "mutation_rate": 1,
-        'transfer': [10, 20, 35],
-        'n_invasion': 20
+        'n_invasion': 12
     }
-
 
 default_params_3 = \
     {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 1,
+        "seed": 750,
+        "env_transfer": [0.3, 1.3],
+        "p1": 23,
         'invasion_rate': 1,
         "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 10
-         # "p_list": [6, 6, 6]
+        'n_invasion': 23
     }
+
 
 default_params_4 = \
     {
@@ -182,7 +178,7 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 # define the name of the directory to be created
 # Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/clustered_sim/test_effect_K_p_changes_transf_long/"
+folder = "/home/giorg/Documents/clustered_sim/new_2/"
 # os.mkdir(folder)
 
 # format: fitness, centroid, desc, genome \n
