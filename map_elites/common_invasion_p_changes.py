@@ -39,6 +39,8 @@
 #
 
 # Default params are general for all simulation
+import numpy as np
+
 
 default_params = \
     {
@@ -125,14 +127,17 @@ folder = "/home/giorg/Documents/clustered_sim/test_effect_K_p_changes/"
 # format: fitness, centroid, desc, genome \n
 def __save_archive(archive, gen, sim, transfer_in, inv_rate, inv, p):
     filename = str(folder) + 'archive_sim_' + '.dat'
+    def write_array(a, f):
+        for i in a:
+            f.write(str(i) + ' ')
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.position)+ ' ')
             f.write(str(k.fitness) + ' ')
             f.write(str(k.modularity) + ' ')
             f.write(str(k.trade_off) + ' ')
-            #for kk in k.invasion_potential.values():
-            #   write_array(np.array(kk), f)
+            for kk in k.invasion_potential.values():
+               write_array(np.array(kk), f)
             f.write(str(k.sum_p0) + ' ')
             f.write(str(k.sum_p1) + ' ')
             f.write(str(k.ps) + ' ')

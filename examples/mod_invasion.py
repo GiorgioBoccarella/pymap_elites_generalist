@@ -62,7 +62,7 @@ env_list = params["env_list"]
 
 
 def environment_from_params(env_list_v, l_n, seed):
-    example_env = env_list_v[len(env_list_v) - 1]
+    example_env = 1.41
     envPair = generate_env.environmentPair(l_n, seed)
     env = envPair(example_env)
 
@@ -80,29 +80,25 @@ def environment_from_params(env_list_v, l_n, seed):
 
 all_env_sim = []
 
-for i in range(0, 20 + 2):
+for i in range(0, params['sim'] + 2):
     new_seed = seed + i
-    envList = environment_from_params(env_list, 150, new_seed)
+    envList = environment_from_params(env_list, l_n, new_seed)
     env_pair_d = {}
     for d, s in zip(env_list, envList):
         env_pair_d[d] = s
     all_env_sim.append(env_pair_d)
 
-print('Generating sequences...')
-# Generate all possible combination
-# 10 bits = 1024 env
-# With N = 4 => 16 sequences etc..
+
 seq_list = 0
 
 
-print('Sequences Generated')
-
 # The file concatenates the simulation output so is possible to concatenate in a single file
-
 # This is necessary to observe how invasion affects evolutionary trajectory
 
-mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim, seq_list=seq_list, sim=params["sim"],
-            params=cm.default_params_1)
+
+
+mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim,
+                                        seq_list=seq_list, sim=params["sim"], params=cm.default_params_1)
 
 
 print("Simulation end")

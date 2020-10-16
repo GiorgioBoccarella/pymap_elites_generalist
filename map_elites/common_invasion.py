@@ -37,115 +37,45 @@
 #| The fact that you are presently reading this means that you have
 #| had knowledge of the CeCILL license and that you accept its terms.
 #
-
+import numpy as np
 # Default params are general for all simulation
 
 default_params = \
     {
-        "seed": 120,
-        "l_n": 24,
-        "env_list": [0.1, 0.3, 0.9, 1.3],
-        "max_evals": 400,
-        "k": 2,
-        "sim": 60
+        "seed": 2000,
+        "l_n": 100,
+        "env_list": [0.3, 1.2, 1.3],
+        "max_evals": 300,
+        "sim": 30,
+        'k': 2,
     }
-
 
 
 default_params_1 = \
     {
-        "seed": 740,
+        "seed": 1500,
+        'del': 0.3,
         "env_transfer": [0.3, 1.3],
-        "p1": 1,
+        'transfer': [50, 150],
+        "p": 0,
+        'l': 100,
+        'k': 2,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'n_invasion': 50
+        's_invasion': 1.2,
     }
+
 
 default_params_2 = \
     {
-        "seed": 750,
+        "seed": 1500,
+        'del': 1.2,
         "env_transfer": [0.3, 1.3],
-        "p1": 12,
+        'transfer': [100, 200],
+        "p": 0,
+        'l': 100,
+        'k': 2,
         'invasion_rate': 1,
-        "mutation_rate": 1,
-        'n_invasion': 12
-    }
-
-default_params_3 = \
-    {
-        "seed": 750,
-        "env_transfer": [0.3, 1.3],
-        "p1": 23,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'n_invasion': 23
-    }
-
-
-default_params_4 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 1
-         # "p_list": [6, 6, 6]
-    }
-
-
-
-default_params_5 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 5
-         # "p_list": [6, 6, 6]
-    }
-
-
-default_params_6 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 12,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion': 10
-         # "p_list": [6, 6, 6]
-    }
-
-
-
-default_params_7 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 5
-         # "p_list": [6, 6, 6]
-    }
-
-default_params_8 = \
-    {
-        "seed" : 10,
-        "env_transfer": [0.3, 0.9, 1.3],
-        "p1": 23,
-        'invasion_rate': 1,
-        "mutation_rate": 1,
-        'transfer': [15, 30, 40],
-        'n_invasion' : 10
-         # "p_list": [6, 6, 6]
+        's_invasion': 0.3,
     }
 
 
@@ -178,20 +108,26 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 # define the name of the directory to be created
 # Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/clustered_sim/new_2/"
+folder = "/home/giorg/Documents/clustered_sim/tranfer_17_10/"
 # os.mkdir(folder)
+
+print(folder)
 
 # format: fitness, centroid, desc, genome \n
 def __save_archive(archive, gen, sim, transfer_in, transf_n, inv_rate, inv, p):
     filename = str(folder) + 'archive_sim_' + '.dat'
+    def write_array(a, f):
+        for i in a:
+            f.write(str(i) + ' ')
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.position) + ' ')
             f.write(str(k.fitness) + ' ')
             f.write(str(k.modularity) + ' ')
             f.write(str(k.trade_off) + ' ')
-            #for kk in k.invasion_potential.values():
-            #   write_array(np.array(kk), f)
+            for kk in k.invasion_potential.values():
+                for l in range(0, len(kk)):
+                    f.write(str(kk[l]) + ' ')
             f.write(str(k.sum_p0) + ' ')
             f.write(str(k.sum_p1) + ' ')
             f.write(str(k.ps) + ' ')
@@ -233,8 +169,15 @@ def save_params(params):
 
 def save_env(env, sim):
     filename = str(folder) + 'env_list' + '.dat'
+    def write_array(a, f):
+        for i in a:
+            f.write(str(i) + ' ')
     with open(filename, 'a+') as f:
-        for k in env.values():
-            f.write(str(k) + ' ')
+        for e in env.values():
+            e_1 = np.array(e[0])
+            write_array(e_1, f)
+            e_2 = np.array(e[1])
+            write_array(e_2, f)
         f.write(str(sim) + " ")
         f.write('\n')
+
