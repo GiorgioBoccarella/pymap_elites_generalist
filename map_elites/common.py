@@ -38,29 +38,31 @@
 #| had knowledge of the CeCILL license and that you accept its terms.
 #
 import numpy as np
+import os
 # Default params are general for all simulation
 
-default_params = \
+initial_params = \
     {
         "seed": 7423,
         "l_n": 100,
         "env_list": [0.3, 0.9, 1.1, 1.3],
-        "max_evals": 500,
-        "sim": 50,
-        'k': 2,
+        "max_evals": 10,
+        "sim": 10
     }
 
 
 default_params_1 = \
     {
-        "seed": 7876,
-        'del': 0.3,
+        "seed": 4326,
+        'del': 0,
+        'transfer': 0,
         "env_transfer": [1.1],
         "p": 0,
         'l': 100,
         'k': 2,
-        'invasion_rate': 0.5,
+        'invasion_rate': 0,
         's_invasion': 1.1,
+        'length_transfer': 100
     }
 
 
@@ -91,8 +93,8 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 # define the name of the directory to be created
 # Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/clustered_sim/for_tuesday_yes/"
-# os.mkdir(folder)
+folder = "/home/giorg/Documents/trial/#1/"
+os.makedirs(folder)
 
 print(folder)
 

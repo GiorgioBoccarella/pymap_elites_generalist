@@ -149,7 +149,7 @@ def compute(dim_map=-1,
             env_list=[],
             seq_list=[],
             variation_operator=cm.variation,
-            params=cm.default_params,
+            params=cm.initial_params,
             log_file=None):
 
     print(params)
