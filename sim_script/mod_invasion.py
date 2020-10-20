@@ -47,8 +47,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import map_elites.model_functions as mt_map_elites
 
-from examples import generate_env
-from map_elites import common_invasion as cm
+from sim_script import generate_env
+from map_elites import common as cm
 
 
 params = cm.default_params

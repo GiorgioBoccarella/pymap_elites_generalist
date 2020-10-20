@@ -46,8 +46,8 @@ import statistics
 import random
 from collections import defaultdict
 
-from map_elites import common_invasion as cm
-from examples import lsq_f
+from map_elites import common as cm
+from sim_script import lsq_f
 
 import copy
 

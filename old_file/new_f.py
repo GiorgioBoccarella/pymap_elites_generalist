@@ -6,8 +6,8 @@ import sys
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from examples import lsq_f
-from examples import generate_env
+from sim_script import lsq_f
+from sim_script import generate_env
 from map_elites import common as cm
 
 #Seed MUST BE different from 0 (see gen_env)
