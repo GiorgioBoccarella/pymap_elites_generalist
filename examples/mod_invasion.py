@@ -95,8 +95,6 @@ seq_list = 0
 # The file concatenates the simulation output so is possible to concatenate in a single file
 # This is necessary to observe how invasion affects evolutionary trajectory
 
-
-
 mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], k=params["k"], env_pair_dict_l=all_env_sim,
                                         seq_list=seq_list, sim=params["sim"], params=cm.default_params_1)
 

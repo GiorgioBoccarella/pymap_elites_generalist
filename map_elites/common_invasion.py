@@ -42,43 +42,26 @@ import numpy as np
 
 default_params = \
     {
-        "seed": 2000,
+        "seed": 7423,
         "l_n": 100,
-        "env_list": [0.3, 1.2, 1.3],
-        "max_evals": 300,
-        "sim": 30,
+        "env_list": [0.3, 0.9, 1.1, 1.3],
+        "max_evals": 500,
+        "sim": 50,
         'k': 2,
     }
 
 
 default_params_1 = \
     {
-        "seed": 1500,
+        "seed": 7876,
         'del': 0.3,
-        "env_transfer": [0.3, 1.3],
-        'transfer': [50, 150],
+        "env_transfer": [1.1],
         "p": 0,
         'l': 100,
         'k': 2,
-        'invasion_rate': 1,
-        's_invasion': 1.2,
+        'invasion_rate': 0.5,
+        's_invasion': 1.1,
     }
-
-
-default_params_2 = \
-    {
-        "seed": 1500,
-        'del': 1.2,
-        "env_transfer": [0.3, 1.3],
-        'transfer': [100, 200],
-        "p": 0,
-        'l': 100,
-        'k': 2,
-        'invasion_rate': 1,
-        's_invasion': 0.3,
-    }
-
-
 
 
 
@@ -108,7 +91,7 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 # define the name of the directory to be created
 # Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/clustered_sim/tranfer_17_10/"
+folder = "/home/giorg/Documents/clustered_sim/for_tuesday_yes/"
 # os.mkdir(folder)
 
 print(folder)

@@ -299,10 +299,8 @@ def compute_invasion_transfer(max_evals=10,
         print("Sim: ", sim_n)
         # The environment pairs are assigned from outside compute function
         env_pair_dict = env_pair_dict_l[sim_n]
-        env_pair_dict_t = copy.deepcopy(env_pair_dict)
-        del env_pair_dict[params["del"]]
 
-        cm.save_env(env_pair_dict_t, sim_n)
+        cm.save_env(env_pair_dict, sim_n)
 
         # This is the random seed for mutations
         np.random.seed(sim_n + params["seed"])
@@ -395,36 +393,7 @@ def compute_invasion_transfer(max_evals=10,
             n_evals += 1
             # At specific time point specified in params['transfer'] the linage are tested outside the environment
             # in which they are evolving in. (Useful for arrow plot)
-            if n_evals in params['transfer']:
-                transf_n += 1
-                for transf in params["env_transfer"]:
-                    archive_t = copy.deepcopy(archive)
-                    n_evals_t = n_evals
-                    max = n_evals_t + 100
-                    n_evals_t = n_evals_t + 1
-                    while n_evals_t < max:
-                        for i in archive_t.keys():
-                            start_g = archive_t[i].genome
-                            all_mut = generate_all_mutants(start_g)
-                            env = env_pair_dict_t[transf]
-                            score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                            score_mod = score_Modularity(start_g, all_mut, env)
-                            mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                            if mutated_genome != []:
-                                archive_t[i].genome = mutated_genome
-                            archive_t[i].fitness = env_pair_fitness_average(archive_t[i].genome, env)
-                            # Here calculate invasion potential
-                            for e in env_pair_dict.keys():
-                                fit, fit_1, fit_2 = env_pair_fitness(archive_t[i].genome, env_pair_dict[e])
-                                archive_t[i].invasion_potential[e] = [fit, fit_1, fit_2]
-                            # Save the trade_off and modularity score
-                            archive_t[i].trade_off = score_tradeOff
-                            archive_t[i].modularity = score_mod
-                            archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                        cm.__save_archive(archive_t, n_evals_t, sim_n, transf, transf_n, params['s_invasion'],
-                                          inv, params["p"])
-                        n_evals_t += 1
-                        #print("Sim: ", sim_n, "Step_replicate: ", n_evals_t, " env_tras: ", transf)
+
     return archive
 
 
