@@ -3,23 +3,20 @@ library(ggpubr)
 library(dplyr)
 library(tidyr)
 
-setwd("~/Documents/clustered_sim/transfer_long_correct_inv_trial_env")
+setwd("~/Documents/trial/#2")
 
 #Trade-offs
+#If many sim a sample is necessary 
+
 
 env <- read.table("env_list.dat", quote="\"", comment.char="") 
+env$k <- rep(0:1, each = 100)
+env$l <- rep(1:100)
+colnames(env) <- c("value", "env_pair", "sim","k",'l')
 
-env <- gather(env, V61)
-
-env$env_pair <- rep(1:3, each = 20)
-env$env_k <- rep(0:1, each = 10)
-env$env_l <- rep(1:20, each = 1)
-
-
-ggplot(env, aes(x = env_l, y = env_pair, fill = value)) +
-  geom_tile() +
-  scale_fill_viridis_c() +
-  facet_wrap(~env_k, scales = "free_x")
+ggplot(env, aes(x = l, weight = value, fill = factor(k), alpha = 0.1)) +
+  geom_density() +
+  facet_wrap(sim~env_pair, ncol =5 )
 
 
 

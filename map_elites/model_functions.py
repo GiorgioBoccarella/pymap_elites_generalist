@@ -44,12 +44,11 @@ import numpy as np
 from numpy.random import choice
 import statistics
 import random
-from collections import defaultdict
-
 from map_elites import common as cm
 from sim_script import lsq_f
-
 import copy
+from collections import defaultdict
+
 
 
 def generate_genome(k, l, p, seed):
@@ -289,7 +288,9 @@ def compute_invasion_transfer(max_evals=10,
                               env_pair_dict_l=[],
                               sim=[],
                               params=[]):
+    print("Params: ", "\n")
     print(params)
+    print("\n")
     cm.save_params(params)
 
     for sim_n in range(0, sim):
@@ -299,8 +300,9 @@ def compute_invasion_transfer(max_evals=10,
         env_pair_dict = env_pair_dict_l[sim_n]
         env_pair_dict_t = copy.deepcopy(env_pair_dict)
 
-        if params['del'] != 0:
-            del env_pair_dict[params["del"]]
+        if params['del'] != [0]:
+            for i in params['del']:
+                del env_pair_dict[i]
 
         cm.save_env(env_pair_dict_t, sim_n)
 
@@ -341,29 +343,30 @@ def compute_invasion_transfer(max_evals=10,
                     j += 1
                 initialize = 1
             # Invasion
-            invasion = np.random.binomial(1, params['invasion_rate'], 1)
-            if invasion is True and sim_n > (sim / 2) - 1 and n_evaluations > 30:
-                for ind in archive.keys():
-                    keys = list(archive.keys())
-                    coordinates = np.random.choice(keys, 1, replace=False)
-                    w = coordinates[0]
-                    invader = archive[ind]
-                    wild_type = archive[w]
+            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 50:
+                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
+                if invasion_p is True:
+                    for ind in archive.keys():
+                        keys = list(archive.keys())
+                        coordinates = np.random.choice(keys, 1, replace=False)
+                        w = coordinates[0]
+                        invader = archive[ind]
+                        wild_type = archive[w]
 
-                    inv_f = invader.invasion_potential[w]
-                    w_f = wild_type.invasion_potential[w]
+                        inv_f = invader.invasion_potential[w]
+                        w_f = wild_type.invasion_potential[w]
 
-                    e = [1, 2]
-                    coordinates = np.random.choice(e, 1, replace=False)
-                    env_inv = int(coordinates)
+                        e = [1, 2]
+                        coordinates = np.random.choice(e, 1, replace=False)
+                        env_inv = int(coordinates)
 
-                    if inv_f[env_inv] > w_f[env_inv]:
-                        archive[w] = copy.deepcopy(archive[ind])
-                        archive[w].position = w
-                        # If invasion is successful then save it
-                        cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'],
-                                           invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                           wild_type.sum_p0, wild_type.sum_p1)
+                        if inv_f[env_inv] > w_f[env_inv]:
+                            archive[w] = copy.deepcopy(archive[ind])
+                            archive[w].position = w
+                            # If invasion is successful then save it
+                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'],
+                                               invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
+                                               wild_type.sum_p0, wild_type.sum_p1)
             # Main mutation selection loop
             if n_evaluations < max_evals + 1:
                 for i in archive.keys():
@@ -389,6 +392,8 @@ def compute_invasion_transfer(max_evals=10,
                         inv = 1
             cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], inv, params["p"])
             n_evaluations += 1
+            if n_evaluations % 50 == 0:
+                print("Steps: ", n_evaluations)
             # Transfer
             # At specific time point or fitness value specified in params['transfer'] the linage are tested outside
             # the environment

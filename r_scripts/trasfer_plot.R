@@ -3,60 +3,54 @@ library(ggpubr)
 library(dplyr)
 library(tidyr)
 
-setwd("~/Documents/clustered_sim/for_tuesday_yes")
-
-#Trade-offs
+setwd("~/Documents/trial/#2")
 
 
-archive <- read.table("archive_sim_.dat", quote="\"", comment.char="")
-colnames(archive) <- c("env_pair", "fitness", "modularity","trade_off", 
-                       "f03avg", "f03A", "f03B", "f13avg", "f13A", "f13B", 'p0', 'p1',  "ps", "gen", 
-                       "sim",  "transf", "transf_n", "inv_with",
+# Load_data
+archive <- read.table("archive.dat", quote="\"", comment.char="")
+colnames(archive) <- c("env_pair", "fitness", "modularity","trade_off", 'p0',
+                       'p1',  "ps", "gen", "sim",  "transfer_in", "transfer_n", "inv_with",
                        "inv_T", 'p')
-
+# Count p sum
 archive$p <- archive$p0 + archive$p1
 
 
-setwd("~/Documents/clustered_sim/transfer_19_10")
-
-#Trade-offs
-
-
-archive_1 <- read.table("archive_sim_.dat", quote="\"", comment.char="")
-colnames(archive_1) <- c("env_pair", "fitness", "modularity","trade_off", 
-                       "f03avg", "f03A", "f03B", "f13avg", "f13A", "f13B", 'p0', 'p1',  "ps", "gen", 
-                       "sim",  "transf", "transf_n", "inv_with",
-                       "inv_T", 'p')
-
-archive_1$p <- archive_1$p0 + archive_1$p1
-
-
-archive <- rbind(archive, archive_1)
-
-summary(archive)
-
-#Transfer
-#archive_t <- archive[archive$transf == 0.3 | archive$transf == 1.3,]
-
 # Evolution
-archive_0t <- archive[archive$transf != 0,]
-#archive_0t <- archive_0t[archive_0t$ps != 50,]
+archive_evo <- archive[archive$transfer_in == 0,]
 
-archive_0t <- archive_0t[archive_0t$env_pair == 1.1,]
-#archive_0t <- archive_0t[archive_0t$inv_T == 1,]
 
 ggplot() +
-  geom_line(data = archive_0t, aes(x = gen, y = fitness, group = interaction(transf, transf_n, ps, env_pair, inv_T),
-                                   color = factor(env_pair), linetype = factor(inv_T)), stat="smooth",method = 'gam', alpha = 0.7,
+  geom_line(data = archive_evo, aes(x = gen, y = trade_off, group = interaction(transfer_in, transfer_n, ps, env_pair, inv_T),
+                                    color = factor(env_pair), linetype = factor(inv_T)),
+            stat="smooth",method = 'gam', alpha = 0.7, 
             arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
-  guides(col=guide_legend("Transfered in Δ E"), linetype = guide_legend("") ) +
   theme_gray(base_size = 15) +
   #xlab("Mutation steps") +
   #ylab("Fitness") +
   theme_gray(base_size = 15) +
   scale_linetype_manual(values = c(1, 2),
-                        labels = c("No Invasion", "Invasion")) +
-  facet_wrap(transf~ps, scale = 'free_x') 
+                        labels = c("No Invasion", "Invasion"))
+
+
+
+archive_1.3 <- archive[archive$env_pair == 1.3,]
+
+#Transfer
+archive_transfer <- archive[archive$transfer_in != 0,]
+archive_transfer_1.3 <- archive[archive$transfer_in == 1.3,]
+
+
+ggplot() +
+  geom_line(data = archive_evo, aes(x = gen, y = fitness, group = interaction(transfer_in, transfer_n, ps, env_pair, inv_T),
+                                   color = factor(env_pair), linetype = factor(inv_T)),
+            stat="smooth",method = 'gam', alpha = 0.7, 
+            arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
+  theme_gray(base_size = 15) +
+  #xlab("Mutation steps") +
+  #ylab("Fitness") +
+  theme_gray(base_size = 15) +
+  scale_linetype_manual(values = c(1, 2),
+                        labels = c("No Invasion", "Invasion"))
 
 
 

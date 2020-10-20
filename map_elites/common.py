@@ -45,23 +45,24 @@ initial_params = \
     {
         "seed": 7423,
         "l_n": 100,
-        "env_list": [0.3, 0.9, 1.1, 1.3],
-        "max_evals": 10,
-        "sim": 10
+        "env_list": [0.1, 0.3, 0.9, 1.1, 1.3],
+        "max_evals": 400,
+        "sim": 20
     }
 
 
 default_params_1 = \
     {
         "seed": 4326,
-        'del': 0,
+        'del': [0.9, 1.1],
         'transfer': 0,
-        "env_transfer": [1.1],
+        "env_transfer": [0],
         "p": 0,
         'l': 100,
         'k': 2,
-        'invasion_rate': 0,
-        's_invasion': 1.1,
+        'invasion': True,
+        'invasion_rate': 0.5,
+        's_invasion': 0.1,
         'length_transfer': 100
     }
 
@@ -91,44 +92,39 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
         s_list = map(evaluate_function, to_evaluate)
     return list(s_list)
 
+
 # define the name of the directory to be created
-# Usually make the folder in advance so they can concatenate
-folder = "/home/giorg/Documents/trial/#1/"
-os.makedirs(folder)
+folder = "/home/giorg/Documents/trial/#2/"
+if not os.path.exists(folder):
+    os.makedirs(folder)
 
 print(folder)
 
+
 # format: fitness, centroid, desc, genome \n
-def __save_archive(archive, gen, sim, transfer_in, transf_n, inv_rate, inv, p):
-    filename = str(folder) + 'archive_sim_' + '.dat'
-    def write_array(a, f):
-        for i in a:
-            f.write(str(i) + ' ')
+def __save_archive(archive, gen, sim, transfer_in, transfer_n, inv_rate, inv, p):
+    filename = str(folder) + 'archive' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.position) + ' ')
             f.write(str(k.fitness) + ' ')
             f.write(str(k.modularity) + ' ')
             f.write(str(k.trade_off) + ' ')
-            for kk in k.invasion_potential.values():
-                for l in range(0, len(kk)):
-                    f.write(str(kk[l]) + ' ')
             f.write(str(k.sum_p0) + ' ')
             f.write(str(k.sum_p1) + ' ')
             f.write(str(k.ps) + ' ')
             f.write(str(gen) + ' ')
             f.write(str(sim) + ' ')
             f.write(str(transfer_in) + " ")
-            f.write(str(transf_n) + " ")
+            f.write(str(transfer_n) + " ")
             f.write(str(inv_rate) + " ")
             f.write(str(inv) + " ")
             f.write(str(p) + " ")
             f.write("\n")
 
 
-
-
-def __save_file_mig(invader, wild, epoch, sim, inv_rate, ips, wps, sum_p0_invader, sum_p1_invader, sum_p0_wild, sum_p1_wild):
+def __save_file_mig(invader, wild, epoch, sim, inv_rate, ips, wps, sum_p0_invader,
+                    sum_p1_invader, sum_p0_wild, sum_p1_wild):
     filename = str(folder) + 'invasion_id' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(invader) + " ")
@@ -166,3 +162,11 @@ def save_env(env, sim):
         f.write(str(sim) + " ")
         f.write('\n')
 
+def save_env(env, sim):
+    filename = str(folder) + 'env_list' + '.dat'
+    with open(filename, 'a+') as f:
+        for k, v in env.items():
+            for val in v:
+                for i in range(0, len(val)):
+                    f.write(str(val[i]) + " " + str(k) + " " + str(sim))
+                    f.write('\n')
