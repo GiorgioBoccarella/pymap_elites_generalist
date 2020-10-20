@@ -46,10 +46,11 @@ import statistics
 import random
 from collections import defaultdict
 
-from map_elites import common_invasion as cm
-from examples import lsq_f
+from map_elites import common as cm
+from sim_script import lsq_f
 
 import copy
+
 
 def generate_genome(k, l, p, seed):
     """Generates genome with certain K size, the L depends on the length of the sequences"""
