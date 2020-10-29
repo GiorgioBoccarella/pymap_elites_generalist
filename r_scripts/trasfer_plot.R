@@ -1,35 +1,111 @@
 library(ggplot2)
-library(ggpubr)
+library(gridExtra)
 library(dplyr)
 library(tidyr)
 
-setwd("~/Documents/trial/#2")
+setwd("~/Documents/trial/#100_good")
 
 
 # Load_data
 archive <- read.table("archive.dat", quote="\"", comment.char="")
 colnames(archive) <- c("env_pair", "fitness", "modularity","trade_off", 'p0',
-                       'p1',  "ps", "gen", "sim",  "transfer_in", "transfer_n", "inv_with",
-                       "inv_T", 'p')
-# Count p sum
+                       'p1', "ps", 'f1avg', 'f1A', 'f1B', 'f2avg', 'f2A', 'f2B',
+                       "gen", "sim",  "transfer_in", "transfer_n", "inv_with","inv_T", 'p')
+
 archive$p <- archive$p0 + archive$p1
 
 
 # Evolution
-archive_evo <- archive[archive$transfer_in == 0,]
+archive_evo <- archive[archive$inv_with == 4,]
+    
 
-
-ggplot() +
-  geom_line(data = archive_evo, aes(x = gen, y = trade_off, group = interaction(transfer_in, transfer_n, ps, env_pair, inv_T),
-                                    color = factor(env_pair), linetype = factor(inv_T)),
+f <- ggplot() +
+  geom_line(data = archive_evo, aes(x = gen, y = fitness, group = interaction(transfer_in,
+                                    transfer_n, env_pair, inv_T), color = factor(env_pair),
+                                    linetype = factor(inv_T)),
             stat="smooth",method = 'gam', alpha = 0.7, 
             arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
   theme_gray(base_size = 15) +
-  #xlab("Mutation steps") +
-  #ylab("Fitness") +
+  xlab("Mutation steps") +
+  ylab("Fitness") +
   theme_gray(base_size = 15) +
   scale_linetype_manual(values = c(1, 2),
-                        labels = c("No Invasion", "Invasion"))
+                        labels = c("No Invasion", "Invasion")) +
+  theme(legend.position = "none") +
+  ggtitle("4")
+
+m <- ggplot() +
+  geom_line(data = archive_evo, aes(x = gen, y = modularity, group = interaction(transfer_in,
+                                                                              transfer_n, env_pair, inv_T), color = factor(env_pair),
+                                    linetype = factor(inv_T)),
+            stat="smooth",method = 'gam', alpha = 0.7, 
+            arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
+  theme_gray(base_size = 15) +
+  xlab("Mutation steps") +
+  ylab("Modularity") +
+  theme_gray(base_size = 15) +
+  scale_linetype_manual(values = c(1, 2),
+                        labels = c("No Invasion", "Invasion")) +
+  theme(legend.position = "none")
+
+
+p <- ggplot() +
+  geom_line(data = archive_evo, aes(x = gen, y = p, group = interaction(transfer_in,
+                                                                                 transfer_n, env_pair, inv_T), color = factor(env_pair),
+                                    linetype = factor(inv_T)),
+            stat="smooth",method = 'gam', alpha = 0.7, 
+            arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
+  theme_gray(base_size = 15) +
+  xlab("Mutation steps") +
+  ylab("p regulators") +
+  theme_gray(base_size = 15) +
+  scale_linetype_manual(values = c(1, 2),
+                        labels = c("No Invasion", "Invasion")) +
+  guides(col=guide_legend("Transfered in Δ E"), linetype = guide_legend("") ) +
+  theme_gray(base_size = 15) 
+
+
+t <- ggplot() +
+  geom_line(data = archive_evo, aes(x = gen, y = trade_off, group = interaction(transfer_in,
+                                                                              transfer_n, env_pair, inv_T), color = factor(env_pair),
+                                    linetype = factor(inv_T)),
+            stat="smooth",method = 'gam', alpha = 0.7, 
+            arrow = arrow(length = unit(0.25, "cm"), ends="last", type = "closed"), size = 0.9) +
+  theme_gray(base_size = 15) +
+  xlab("Mutation steps") +
+  ylab("Trade-off") +
+  theme_gray(base_size = 15) +
+  scale_linetype_manual(values = c(1, 2),
+                        labels = c("No Invasion", "Invasion")) +
+  theme(legend.position = "none")
+
+
+r <- grid.arrange(f, m, t, p, nrow = 2)
+
+ggsave("my_graph_4.png", plot=r, height = 10, width = 14,  dpi=300)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

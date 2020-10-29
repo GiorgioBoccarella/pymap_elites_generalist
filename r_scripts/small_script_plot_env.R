@@ -16,7 +16,9 @@ colnames(env) <- c("value", "env_pair", "sim","k",'l')
 
 ggplot(env, aes(x = l, weight = value, fill = factor(k), alpha = 0.1)) +
   geom_density() +
-  facet_wrap(sim~env_pair, ncol =5 )
+  facet_wrap(env_pair~., ncol =5 )
+
+  
 
 
 

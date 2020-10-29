@@ -62,7 +62,7 @@ env_list = params["env_list"]
 
 
 def environment_from_params(env_list_v, l_n, seed):
-    example_env = 1.41
+    example_env = 1.3
     envPair = generate_env.environmentPair(l_n, seed)
     env = envPair(example_env)
 
@@ -94,8 +94,10 @@ for i in range(0, params['sim'] + 2):
 # The file concatenates the simulation output so is possible to concatenate in a single file
 # This is necessary to observe how invasion affects evolutionary trajectory
 
-mt_map_elites.compute_invasion_transfer(max_evals=params["max_evals"], env_pair_dict_l= all_env_sim,
-                                        sim=params["sim"], params=cm.default_params_1)
 
+
+mt_map_elites.compute_base_line_fitness(max_evals=params["max_evals"], env_pair_dict_l=all_env_sim,
+                                        sim=params["sim"], params=cm.params_1)
 
 print("Simulation end")
+
