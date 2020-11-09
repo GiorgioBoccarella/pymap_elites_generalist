@@ -1,23 +1,18 @@
-# Python3 Map-Elites
+# Python3 Map-Elites 
 This repository contains "reference implementations" of:
 - CVT-MAP-Elites (Vassiliades, Chatzilygeroudis, Mouret, 2017)
 - Multitask-MAP-Elites (Mouret and Maguire, 2020)
+- Tikhonov, M., Kachru, S., & Fisher, D. S. (2020).
 
 CVT-MAP-Elites can be used instead of the standard MAP-Elites described in:
 Mouret JB, Clune J. Illuminating search spaces by mapping elites. arXiv preprint arXiv:1504.04909. 2015 Apr 20.
 
-The general philosophy is to provide implementations (1 page of code) that are easy to transform and include in your own research. This means that there is some code redundancy between the algorithms. If you are interested in a more advanced framework:
-- Sferes (C++): https://github.com/sferes2/sferes2 
-- QDPy (Python) https://pypi.org/project/qdpy/
-
-By default, the evaluations are parallelized on each core (using the multiprocessing package).
 
 ## Dependencies
 
 - python3
 - numpy
-- sklearn (scikit-learn) [for CVT]
-- matplotlib (optional, for plotting)
+
 
 ## References:
 If you use this code in a scientific paper, please cite:
@@ -35,32 +30,28 @@ If you use this code in a scientific paper, please cite:
 (you need to have the map_elites module map_elites in your Python path)
 
 ```python
-import map_elites.cvt as cvt_map_elites
 
-archive = cvt_map_elites.compute(2, 10, rastrigin, n_niches=10000, max_evals=2e6, log_file=open('cvt.dat', 'w'))
-```
-Where `2` is the dimensionality of the map, ``10`` is the dimensionality of the genotype, ``n_niches`` is the number of niches, and ``max_evals`` is the number of evaluations. You can also pass an optional `params` argument to tune a few parameters. Here are the default values:
+mt_map_elites.compute_invasion_transfer_new(params_sim=cm.params_sim_t)
 
 ```
-default_params = \
+params_sim_t = \
     {
-        # more of this -> higher-quality CVT
-        "cvt_samples": 25000,
-        # we evaluate in batches to paralleliez
-        "batch_size": 100,
-        # proportion of niches to be filled before starting
-        "random_init": 0.1,
-        # batch for random initialization
-        "random_init_batch": 100,
-        # when to write results (one generation = one batch)
-        "dump_period": 10000,
-        # do we use several cores?
-        "parallel": True,
-        # do we cache the result of CVT and reuse?
-        "cvt_use_cache": True,
-        # min/max of parameters
-        "min": 0,
-        "max": 1,
+        "seed_e": 800, # seed environment
+        "seed_s": 3450, # seed mutation
+        "l_n": 100, # L lenght of environment
+        "env_list": [0.1, 1.0, 1.3],# generate list of environment with Delta E
+        "max_evals": 250, # max mutation steps
+        "sim": 40, # number of simulation
+        "del": [1.3], # Delete environment from list
+        "p": 0, # Initial p regulator
+        'l': 100, # lenght of genome k-basis
+        'k': 4, # number of k
+        'invasion': True, # Invasion true or false
+        'invasion_rate': 1, # How often invasion (0-1)
+        'avg': True, # Invade base on average fitness
+        'env_transfer': [1.3], # Transfer in this env
+        'length_transfer': 100, # Lenght Transfer
+        "folder": "test_transfer_1.3_k4_l100/"
     }
 ```
 
