@@ -46,7 +46,9 @@ import statistics
 import random
 from map_elites import common as cm
 from sim_script import lsq_f
+from sim_script import generate_env
 import copy
+import os
 from collections import defaultdict
 
 
@@ -175,22 +177,6 @@ def env_pair_fitness_average(genome, env_pair):
     return average_fitness
 
 
-def env_pair_fitness_AB(genome, env_pair):
-    """Returns average fitness of the two environment"""
-
-    genome = genome.T
-
-    [x, resnorm, residual] = lsq_f.lsqnonneg(genome, env_pair[0])
-    fit_m_1 = -math.sqrt(resnorm)
-
-    [x, resnorm, residual] = lsq_f.lsqnonneg(genome, env_pair[1])
-    fit_m_2 = -math.sqrt(resnorm)
-
-    average_fitness = (fit_m_1 + fit_m_2) / 2
-
-    return average_fitness, fit_m_1, fit_m_2
-
-
 def scoreTradeOff(s_genome, all_g, env):
     """Calculate trade-off (How much a mutation affects the fitness in the environment pair)"""
 
@@ -285,15 +271,52 @@ def score_Modularity(s_genome, all_g, env):
 
 
 
+def environment_from_params(env_list_v, l_n, seed):
+    example_env = 1.3
+    envPair = generate_env.environmentPair(l_n, seed)
+    env = envPair(example_env)
 
-def compute_base_line_fitness(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
+    envPair_c = generate_env.environmentPair(env, 0)
+
+    envList = []
+
+    for i in range(0, len(env_list_v)):
+        envList.append(envPair_c(env_list_v[i]))
+
+    envList = np.array(envList)
+    envList = envList.real
+
+    return envList
+
+
+
+def compute_base_line_fitness(params_sim=[],
+                              params_i=[]):
     print("Params: ", "\n")
-    print(params)
+    print(params_i)
+    print(params_sim)
     print("\n")
-    cm.save_params(params)
+    cm.save_params(params_i)
+    cm.save_params(params_sim)
+
+    seed = params_i["seed"]
+    l_n = params_i["l_n"]
+    env_list = params_i["env_list"]
+    sim = params_i["sim"]
+    max_evals = params_i["max_evals"]
+
+    all_env_sim = []
+
+    for i in range(0, params_i['sim'] + 1):
+        new_seed = seed + i
+        envList = environment_from_params(env_list, l_n, new_seed)
+        env_pair_d = {}
+        for d, s in zip(env_list, envList):
+            env_pair_d[d] = s
+        all_env_sim.append(env_pair_d)
+
+    env_pair_dict_l = all_env_sim
+
 
     for sim_n in range(0, sim):
 
@@ -302,7 +325,7 @@ def compute_base_line_fitness(max_evals=10,
         env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
 
         # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
+        np.random.seed(sim_n + params_sim["seed"])
 
         # init archive (empty)
         archive = {}
@@ -315,7 +338,7 @@ def compute_base_line_fitness(max_evals=10,
             if initialize == 0:
                 j = 0
                 for i in env_pair_dict.keys():
-                    g = generate_genome(params['k'], params['l'], params['p'], sim_n + params["seed"])
+                    g = generate_genome(params_sim['k'], params_sim['l'], params_sim['p'], sim_n + params_sim["seed"])
                     # calculate fitness and invasion potential
                     fit = env_pair_fitness_average(g, env_pair_dict[i])
                     inv_pot = {}
@@ -357,57 +380,68 @@ def compute_base_line_fitness(max_evals=10,
                     archive[i].modularity = score_mod
                     archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
                     inv = 0
-                    if sim_n > (sim / 2) - 1:
-                        inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
+            cm.__save_archive_full(archive, n_evaluations, sim_n, 0, 0, 0, 0,
+                              inv, params_sim["p"])
             n_evaluations += 1
             if n_evaluations % 50 == 0:
                 print("Steps: ", n_evaluations)
     return archive
 
+def compute_invasion_AB(params_sim=[]):
 
+    folder = "/home/giorg/Documents/tidy_result/" + str(params_sim["folder"])
 
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-
-def compute_invasion_transfer(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
     print("Params: ", "\n")
-    print(params)
+    print(params_sim)
     print("\n")
-    cm.save_params(params)
+    cm.save_params(params_sim, folder)
+
+    seed_e = params_sim["seed_e"]
+    l_n = params_sim["l_n"]
+    env_list = params_sim["env_list"]
+    sim = params_sim["sim"]
+    max_evals = params_sim["max_evals"]
+
+    all_env_sim = []
+
+    print("Generating environments...", "\n")
+
+    for i in range(0, params_sim['sim'] + 1):
+        new_seed = seed_e + i
+        envList = environment_from_params(env_list, l_n, new_seed)
+        env_pair_d = {}
+        for d, s in zip(env_list, envList):
+            env_pair_d[d] = s
+        all_env_sim.append(env_pair_d)
+
+    env_pair_dict_l = all_env_sim
+
+    print("Simulation starts: ", "\n")
 
     for sim_n in range(0, sim):
 
         print("Sim: ", sim_n)
         # The environment pairs are assigned from outside compute function
         env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
-        env_pair_dict_t = copy.deepcopy(env_pair_dict)
-
-        if params['del'] != [0]:
-            for i in params['del']:
-                del env_pair_dict[i]
-
-        cm.save_env(env_pair_dict_t, sim_n)
 
         # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
+        np.random.seed(sim_n + params_sim["seed_s"])
 
         # init archive (empty)
         archive = {}
         initialize = 0
-        transfer_n = 0
 
-        # main loop
+        # Main loop
         n_evaluations = 0  # number of evaluations
         while n_evaluations < max_evals + 1:
             # If environment is empty fill with random individuals
             if initialize == 0:
                 j = 0
                 for i in env_pair_dict.keys():
-                    g = generate_genome(params['k'], params['l'], params['p'], sim_n + params["seed"])
+                    g = generate_genome(params_sim['k'], params_sim['l'], params_sim['p'], sim_n + params_sim["seed_s"])
                     # calculate fitness and invasion potential
                     fit = env_pair_fitness_average(g, env_pair_dict[i])
                     inv_pot = {}
@@ -429,8 +463,8 @@ def compute_invasion_transfer(max_evals=10,
                     j += 1
                 initialize = 1
             # Invasion
-            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 50:
-                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
+            if params_sim['invasion'] is True:
+                invasion_p = np.random.binomial(1, params_sim['invasion_rate'], 1)
                 if invasion_p == 1:
                     for ind in archive.keys():
                         keys = list(archive.keys())
@@ -442,17 +476,25 @@ def compute_invasion_transfer(max_evals=10,
                         inv_f = invader.invasion_potential[w]
                         w_f = wild_type.invasion_potential[w]
 
-                        e = [1, 2]
-                        coordinates = np.random.choice(e, 1, replace=False)
-                        env_inv = int(coordinates)
+                        if params_sim['avg'] is False:
+                            e = [1, 2]
+                            coordinates = np.random.choice(e, 1, replace=False)
+                            env_inv = int(coordinates)
+                        else:
+                            env_inv = 0
 
+                        inv = 0
                         if inv_f[env_inv] > w_f[env_inv]:
-                            archive[w] = copy.deepcopy(archive[ind])
-                            archive[w].position = w
+                            if sim_n > (sim / 2) - 1:
+                                archive[w] = copy.deepcopy(archive[ind])
+                                archive[w].position = w
+                                inv = 1
                             # If invasion is successful then save it
-                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'], params['invasion_rate'],
+                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, int(params_sim['avg']),
+                                               params_sim['invasion_rate'],
                                                invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                               wild_type.sum_p0, wild_type.sum_p1)
+                                               wild_type.sum_p0, wild_type.sum_p1, inv, folder,
+                                               ''.join(str(params_sim["env_list"])))
             # Main mutation selection loop
             if n_evaluations < max_evals + 1:
                 for i in archive.keys():
@@ -476,19 +518,159 @@ def compute_invasion_transfer(max_evals=10,
                     inv = 0
                     if sim_n > (sim / 2) - 1:
                         inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
+            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, int(params_sim['avg']), params_sim['invasion_rate'],
+                              inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
             n_evaluations += 1
             if n_evaluations % 50 == 0:
                 print("Steps: ", n_evaluations)
-            # Transfer
-            if params['transfer'] is True and n_evaluations > 250:
-                if -0.65 <= archive[1.1].fitness <= 0.6:
-                    transfer_n += 1
-                    for env_transfer in params["env_transfer"]:
+    return archive
+
+def compute_invasion_transfer_new(params_sim=[]):
+
+    folder = "/home/giorg/Documents/tidy_result/" + str(params_sim["folder"])
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    print("Params: ", "\n")
+    print(params_sim)
+    print("\n")
+    cm.save_params(params_sim, folder)
+
+    seed_e = params_sim["seed_e"]
+    l_n = params_sim["l_n"]
+    env_list = params_sim["env_list"]
+    sim = params_sim["sim"]
+    max_evals = params_sim["max_evals"]
+
+    all_env_sim = []
+
+    print("Generating environments...", "\n")
+
+    for i in range(0, params_sim['sim'] + 1):
+        new_seed = seed_e + i
+        envList = environment_from_params(env_list, l_n, new_seed)
+        env_pair_d = {}
+        for d, s in zip(env_list, envList):
+            env_pair_d[d] = s
+        all_env_sim.append(env_pair_d)
+
+    env_pair_dict_l = all_env_sim
+
+    print("Simulation starts: ", "\n")
+
+    for sim_n in range(0, sim):
+
+        print("Sim: ", sim_n)
+        # The environment pairs are assigned from outside compute function
+        env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
+        env_pair_dict_t = copy.deepcopy(env_pair_dict)
+
+        if params_sim['del'] != [0]:
+            for i in params_sim['del']:
+                del env_pair_dict[i]
+
+        # This is the random seed for mutations
+        np.random.seed(sim_n + params_sim["seed_s"])
+
+        # init archive (empty)
+        archive = {}
+        initialize = 0
+
+        # Main loop
+        n_evaluations = 0  # number of evaluations
+        while n_evaluations < max_evals + 1:
+            # If environment is empty fill with random individuals
+            if initialize == 0:
+                j = 0
+                for i in env_pair_dict.keys():
+                    g = generate_genome(params_sim['k'], params_sim['l'], params_sim['p'], sim_n + params_sim["seed_s"])
+                    # calculate fitness and invasion potential
+                    fit = env_pair_fitness_average(g, env_pair_dict[i])
+                    inv_pot = {}
+                    for e in env_pair_dict:
+                        fit, fit_1, fit_2 = env_pair_fitness(g, env_pair_dict[e])
+                        inv_pot[e] = [fit, fit_1, fit_2]
+                    # Score starting feature of the genome g
+                    all_mut = generate_all_mutants(g)
+                    env = env_pair_dict[i]
+                    score_tradeOff = scoreTradeOff(g, all_mut, env)
+                    score_mod = score_Modularity(g, all_mut, env)
+                    pos = i
+                    # Pack traits and feature, make Ind and add to archive
+                    sum_p0, sum_p1 = sum_p_genome(g)
+                    ps = sum_p0 + sum_p1
+                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1, ps
+                    ind = make_ind_inv(to_gen_ind)
+                    add_to_archive(pos, ind, archive)
+                    j += 1
+                initialize = 1
+            # Invasion
+            if params_sim['invasion'] is True:
+                invasion_p = np.random.binomial(1, params_sim['invasion_rate'], 1)
+                if invasion_p == 1:
+                    for ind in archive.keys():
+                        keys = list(archive.keys())
+                        coordinates = np.random.choice(keys, 1, replace=False)
+                        w = coordinates[0]
+                        invader = archive[ind]
+                        wild_type = archive[w]
+
+                        inv_f = invader.invasion_potential[w]
+                        w_f = wild_type.invasion_potential[w]
+
+                        if params_sim['avg'] is False:
+                            e = [1, 2]
+                            coordinates = np.random.choice(e, 1, replace=False)
+                            env_inv = int(coordinates)
+                        else:
+                            env_inv = 0
+
+                        inv = 0
+                        if inv_f[env_inv] > w_f[env_inv]:
+                            if sim_n > (sim / 2) - 1:
+                                archive[w] = copy.deepcopy(archive[ind])
+                                archive[w].position = w
+                                inv = 1
+                            # If invasion is successful then save it
+                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, int(params_sim['avg']),
+                                               params_sim['invasion_rate'],
+                                               invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
+                                               wild_type.sum_p0, wild_type.sum_p1, inv, folder,
+                                               ''.join(str(params_sim["env_list"])))
+            # Main mutation selection loop
+            if n_evaluations < max_evals + 1:
+                for i in archive.keys():
+                    start_g = archive[i].genome
+                    all_mut = generate_all_mutants(start_g)
+                    env = env_pair_dict[i]
+                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                    score_mod = score_Modularity(start_g, all_mut, env)
+                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                    if mutated_genome != []:
+                        archive[i].genome = mutated_genome
+                    archive[i].fitness = env_pair_fitness_average(archive[i].genome, env)
+                    # Here calculate invasion potential (only if invasion can happen, otherwise is not used)
+                    for e in env_pair_dict.keys():
+                        fit, fit_1, fit_2 = env_pair_fitness(archive[i].genome, env_pair_dict[e])
+                        archive[i].invasion_potential[e] = [fit, fit_1, fit_2]
+                    # Save the trade_off and modularity score
+                    archive[i].trade_off = score_tradeOff
+                    archive[i].modularity = score_mod
+                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
+                    inv = 0
+                    if sim_n > (sim / 2) - 1:
+                        inv = 1
+            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, int(params_sim['avg']), params_sim['invasion_rate'],
+                              inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
+            n_evaluations += 1
+            if n_evaluations % 50 == 0:
+                print("Steps: ", n_evaluations)
+            if n_evaluations == 250:
+                    for env_transfer in params_sim["env_transfer"]:
                         archive_t = copy.deepcopy(archive)
                         n_evaluations_t = n_evaluations
-                        max_t = n_evaluations_t + params['length_transfer']
+                        max_t = n_evaluations_t + params_sim['length_transfer']
                         n_evaluations_t = n_evaluations_t + 1
                         while n_evaluations_t < max_t:
                             for i in archive_t.keys():
@@ -505,22 +687,46 @@ def compute_invasion_transfer(max_evals=10,
                                 archive_t[i].trade_off = score_tradeOff
                                 archive_t[i].modularity = score_mod
                                 archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, transfer_n, params['s_invasion'],
-                                              inv, params["p"])
+                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, 1, int(params_sim['avg']),
+                                              params_sim['invasion_rate'], inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
                             n_evaluations_t += 1
+                        if n_evaluations_t % 50 == 0:
+                            print("Steps: ", n_evaluations_t, "env: ", env_transfer)
     return archive
 
+def compute_invasion_transfer_new_mod_t(params_sim=[]):
 
+    folder = "/home/giorg/Documents/tidy_result/" + str(params_sim["folder"])
 
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-def compute_invasion_transfer_p(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
     print("Params: ", "\n")
-    print(params)
+    print(params_sim)
     print("\n")
-    cm.save_params(params)
+    cm.save_params(params_sim, folder)
+
+    seed_e = params_sim["seed_e"]
+    l_n = params_sim["l_n"]
+    env_list = params_sim["env_list"]
+    sim = params_sim["sim"]
+    max_evals = params_sim["max_evals"]
+
+    all_env_sim = []
+
+    print("Generating environments...", "\n")
+
+    for i in range(0, params_sim['sim'] + 1):
+        new_seed = seed_e + i
+        envList = environment_from_params(env_list, l_n, new_seed)
+        env_pair_d = {}
+        for d, s in zip(env_list, envList):
+            env_pair_d[d] = s
+        all_env_sim.append(env_pair_d)
+
+    env_pair_dict_l = all_env_sim
+
+    print("Simulation starts: ", "\n")
 
     for sim_n in range(0, sim):
 
@@ -529,29 +735,25 @@ def compute_invasion_transfer_p(max_evals=10,
         env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
         env_pair_dict_t = copy.deepcopy(env_pair_dict)
 
-        if params['del'] != [0]:
-            for i in params['del']:
+        if params_sim['del'] != [0]:
+            for i in params_sim['del']:
                 del env_pair_dict[i]
 
-        cm.save_env(env_pair_dict_t, sim_n)
-
         # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
+        np.random.seed(sim_n + params_sim["seed_s"])
 
         # init archive (empty)
         archive = {}
         initialize = 0
-        transfer_n = 0
 
-        # main loop
+        # Main loop
         n_evaluations = 0  # number of evaluations
         while n_evaluations < max_evals + 1:
             # If environment is empty fill with random individuals
             if initialize == 0:
                 j = 0
                 for i in env_pair_dict.keys():
-                    p = np.random.choice(range(100), 1, replace=False)
-                    g = generate_genome(params['k'], params['l'], int(p), sim_n + params["seed"])
+                    g = generate_genome(params_sim['k'], params_sim['l'], params_sim['p'], sim_n + params_sim["seed_s"])
                     # calculate fitness and invasion potential
                     fit = env_pair_fitness_average(g, env_pair_dict[i])
                     inv_pot = {}
@@ -573,8 +775,8 @@ def compute_invasion_transfer_p(max_evals=10,
                     j += 1
                 initialize = 1
             # Invasion
-            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 50:
-                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
+            if params_sim['invasion'] is True:
+                invasion_p = np.random.binomial(1, params_sim['invasion_rate'], 1)
                 if invasion_p == 1:
                     for ind in archive.keys():
                         keys = list(archive.keys())
@@ -586,17 +788,25 @@ def compute_invasion_transfer_p(max_evals=10,
                         inv_f = invader.invasion_potential[w]
                         w_f = wild_type.invasion_potential[w]
 
-                        e = [1, 2]
-                        coordinates = np.random.choice(e, 1, replace=False)
-                        env_inv = int(coordinates)
+                        if params_sim['avg'] is False:
+                            e = [1, 2]
+                            coordinates = np.random.choice(e, 1, replace=False)
+                            env_inv = int(coordinates)
+                        else:
+                            env_inv = 0
 
+                        inv = 0
                         if inv_f[env_inv] > w_f[env_inv]:
-                            archive[w] = copy.deepcopy(archive[ind])
-                            archive[w].position = w
+                            if sim_n > (sim / 2) - 1:
+                                archive[w] = copy.deepcopy(archive[ind])
+                                archive[w].position = w
+                                inv = 1
                             # If invasion is successful then save it
-                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'], params['invasion_rate'],
+                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, int(params_sim['avg']),
+                                               params_sim['invasion_rate'],
                                                invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                               wild_type.sum_p0, wild_type.sum_p1)
+                                               wild_type.sum_p0, wild_type.sum_p1, inv, folder,
+                                               ''.join(str(params_sim["env_list"])))
             # Main mutation selection loop
             if n_evaluations < max_evals + 1:
                 for i in archive.keys():
@@ -620,21 +830,17 @@ def compute_invasion_transfer_p(max_evals=10,
                     inv = 0
                     if sim_n > (sim / 2) - 1:
                         inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
+            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, int(params_sim['avg']), params_sim['invasion_rate'],
+                              inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
             n_evaluations += 1
             if n_evaluations % 50 == 0:
                 print("Steps: ", n_evaluations)
-            # Transfer
-            # At specific time point or fitness value specified in params['transfer'] the linage are tested outside
-            # the environment
-            if params['transfer'] != 0:
-                if n_evaluations in params['transfer']:
-                    transfer_n += 1
-                    for env_transfer in params["env_transfer"]:
+            if n_evaluations == 250:
+                    for env_transfer in params_sim["env_transfer"]:
                         archive_t = copy.deepcopy(archive)
+                        archive_t = {k: v for k, v in archive_t.items() if k == 1.0}
                         n_evaluations_t = n_evaluations
-                        max_t = n_evaluations_t + params['length_transfer']
+                        max_t = n_evaluations_t + params_sim['length_transfer']
                         n_evaluations_t = n_evaluations_t + 1
                         while n_evaluations_t < max_t:
                             for i in archive_t.keys():
@@ -651,21 +857,46 @@ def compute_invasion_transfer_p(max_evals=10,
                                 archive_t[i].trade_off = score_tradeOff
                                 archive_t[i].modularity = score_mod
                                 archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, transfer_n, params['s_invasion'],
-                                              inv, params["p"])
+                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, 1, int(params_sim['avg']),
+                                              params_sim['invasion_rate'], inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
                             n_evaluations_t += 1
+                        if n_evaluations_t % 50 == 0:
+                            print("Steps: ", n_evaluations_t, "env: ", env_transfer)
     return archive
 
+def compute_invasion_transfer_new_mod_t_multi(params_sim=[]):
 
+    folder = "/home/giorg/Documents/tidy_result/" + str(params_sim["folder"])
 
-def compute_invasion_transfer_avg(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
     print("Params: ", "\n")
-    print(params)
+    print(params_sim)
     print("\n")
-    cm.save_params(params)
+    cm.save_params(params_sim, folder)
+
+    seed_e = params_sim["seed_e"]
+    l_n = params_sim["l_n"]
+    env_list = params_sim["env_list"]
+    sim = params_sim["sim"]
+    max_evals = params_sim["max_evals"]
+
+    all_env_sim = []
+
+    print("Generating environments...", "\n")
+
+    for i in range(0, params_sim['sim'] + 1):
+        new_seed = seed_e + i
+        envList = environment_from_params(env_list, l_n, new_seed)
+        env_pair_d = {}
+        for d, s in zip(env_list, envList):
+            env_pair_d[d] = s
+        all_env_sim.append(env_pair_d)
+
+    env_pair_dict_l = all_env_sim
+
+    print("Simulation starts: ", "\n")
 
     for sim_n in range(0, sim):
 
@@ -674,28 +905,25 @@ def compute_invasion_transfer_avg(max_evals=10,
         env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
         env_pair_dict_t = copy.deepcopy(env_pair_dict)
 
-        if params['del'] != [0]:
-            for i in params['del']:
+        if params_sim['del'] != [0]:
+            for i in params_sim['del']:
                 del env_pair_dict[i]
 
-        cm.save_env(env_pair_dict_t, sim_n)
-
         # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
+        np.random.seed(sim_n + params_sim["seed_s"])
 
         # init archive (empty)
         archive = {}
         initialize = 0
-        transfer_n = 0
 
-        # main loop
+        # Main loop
         n_evaluations = 0  # number of evaluations
         while n_evaluations < max_evals + 1:
             # If environment is empty fill with random individuals
             if initialize == 0:
                 j = 0
                 for i in env_pair_dict.keys():
-                    g = generate_genome(params['k'], params['l'], params['p'], sim_n + params["seed"])
+                    g = generate_genome(params_sim['k'], params_sim['l'], params_sim['p'], sim_n + params_sim["seed_s"])
                     # calculate fitness and invasion potential
                     fit = env_pair_fitness_average(g, env_pair_dict[i])
                     inv_pot = {}
@@ -717,8 +945,8 @@ def compute_invasion_transfer_avg(max_evals=10,
                     j += 1
                 initialize = 1
             # Invasion
-            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 10:
-                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
+            if params_sim['invasion'] is True:
+                invasion_p = np.random.binomial(1, params_sim['invasion_rate'], 1)
                 if invasion_p == 1:
                     for ind in archive.keys():
                         keys = list(archive.keys())
@@ -730,15 +958,25 @@ def compute_invasion_transfer_avg(max_evals=10,
                         inv_f = invader.invasion_potential[w]
                         w_f = wild_type.invasion_potential[w]
 
-                        env_inv = 0
+                        if params_sim['avg'] is False:
+                            e = [1, 2]
+                            coordinates = np.random.choice(e, 1, replace=False)
+                            env_inv = int(coordinates)
+                        else:
+                            env_inv = 0
 
+                        inv = 0
                         if inv_f[env_inv] > w_f[env_inv]:
-                            archive[w] = copy.deepcopy(archive[ind])
-                            archive[w].position = w
+                            if sim_n > (sim / 2) - 1:
+                                archive[w] = copy.deepcopy(archive[ind])
+                                archive[w].position = w
+                                inv = 1
                             # If invasion is successful then save it
-                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'], params['invasion_rate'],
+                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, int(params_sim['avg']),
+                                               params_sim['invasion_rate'],
                                                invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                               wild_type.sum_p0, wild_type.sum_p1)
+                                               wild_type.sum_p0, wild_type.sum_p1, inv, folder,
+                                               ''.join(str(params_sim["env_list"])))
             # Main mutation selection loop
             if n_evaluations < max_evals + 1:
                 for i in archive.keys():
@@ -762,325 +1000,39 @@ def compute_invasion_transfer_avg(max_evals=10,
                     inv = 0
                     if sim_n > (sim / 2) - 1:
                         inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
+            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, int(params_sim['avg']), params_sim['invasion_rate'],
+                              inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
             n_evaluations += 1
             if n_evaluations % 50 == 0:
                 print("Steps: ", n_evaluations)
-            # Transfer
-            # At specific time point or fitness value specified in params['transfer'] the linage are tested outside
-            # the environment
-            if params['transfer'] != 0:
-                if n_evaluations in params['transfer']:
-                    transfer_n += 1
-                    for env_transfer in params["env_transfer"]:
-                        archive_t = copy.deepcopy(archive)
-                        n_evaluations_t = n_evaluations
-                        max_t = n_evaluations_t + params['length_transfer']
-                        n_evaluations_t = n_evaluations_t + 1
-                        while n_evaluations_t < max_t:
-                            for i in archive_t.keys():
-                                start_g = archive_t[i].genome
-                                all_mut = generate_all_mutants(start_g)
-                                env = env_pair_dict_t[env_transfer]
-                                score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                                score_mod = score_Modularity(start_g, all_mut, env)
-                                mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                                if mutated_genome != []:
-                                    archive_t[i].genome = mutated_genome
-                                archive_t[i].fitness = env_pair_fitness_average(archive_t[i].genome, env)
-                                # Save the trade_off and modularity score
-                                archive_t[i].trade_off = score_tradeOff
-                                archive_t[i].modularity = score_mod
-                                archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, transfer_n, params['s_invasion'],
-                                              params['invasion_rate'], inv, params["p"])
-                            n_evaluations_t += 1
-    return archive
-
-
-
-
-def compute_invasion_transfer_avg_p(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
-    print("Params: ", "\n")
-    print(params)
-    print("\n")
-    cm.save_params(params)
-
-    for sim_n in range(0, sim):
-
-        print("Sim: ", sim_n)
-        # The environment pairs are assigned from outside compute function
-        env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
-        env_pair_dict_t = copy.deepcopy(env_pair_dict)
-
-        if params['del'] != [0]:
-            for i in params['del']:
-                del env_pair_dict[i]
-
-        cm.save_env(env_pair_dict_t, sim_n)
-
-        # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
-
-        # init archive (empty)
-        archive = {}
-        initialize = 0
-        transfer_n = 0
-
-        # main loop
-        n_evaluations = 0  # number of evaluations
-        while n_evaluations < max_evals + 1:
-            # If environment is empty fill with random individuals
-            if initialize == 0:
-                j = 0
-                for i in env_pair_dict.keys():
-                    p = np.random.choice(range(100), 1, replace=False)
-                    g = generate_genome(params['k'], params['l'], int(p), sim_n + params["seed"])
-                    # calculate fitness and invasion potential
-                    fit = env_pair_fitness_average(g, env_pair_dict[i])
-                    inv_pot = {}
-                    for e in env_pair_dict:
-                        fit, fit_1, fit_2 = env_pair_fitness(g, env_pair_dict[e])
-                        inv_pot[e] = [fit, fit_1, fit_2]
-                    # Score starting feature of the genome g
-                    all_mut = generate_all_mutants(g)
-                    env = env_pair_dict[i]
-                    score_tradeOff = scoreTradeOff(g, all_mut, env)
-                    score_mod = score_Modularity(g, all_mut, env)
-                    pos = i
-                    # Pack traits and feature, make Ind and add to archive
-                    sum_p0, sum_p1 = sum_p_genome(g)
-                    ps = sum_p0 + sum_p1
-                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1, ps
-                    ind = make_ind_inv(to_gen_ind)
-                    add_to_archive(pos, ind, archive)
-                    j += 1
-                initialize = 1
-            # Invasion
-            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 10:
-                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
-                if invasion_p == 1:
-                    for ind in archive.keys():
-                        keys = list(archive.keys())
-                        coordinates = np.random.choice(keys, 1, replace=False)
-                        w = coordinates[0]
-                        invader = archive[ind]
-                        wild_type = archive[w]
-
-                        inv_f = invader.invasion_potential[w]
-                        w_f = wild_type.invasion_potential[w]
-
-                        env_inv = 0
-
-                        if inv_f[env_inv] > w_f[env_inv]:
-                            archive[w] = copy.deepcopy(archive[ind])
-                            archive[w].position = w
-                            # If invasion is successful then save it
-                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'], params['invasion_rate'],
-                                               invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                               wild_type.sum_p0, wild_type.sum_p1)
-            # Main mutation selection loop
-            if n_evaluations < max_evals + 1:
-                for i in archive.keys():
-                    start_g = archive[i].genome
-                    all_mut = generate_all_mutants(start_g)
-                    env = env_pair_dict[i]
-                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                    score_mod = score_Modularity(start_g, all_mut, env)
-                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                    if mutated_genome != []:
-                        archive[i].genome = mutated_genome
-                    archive[i].fitness = env_pair_fitness_average(archive[i].genome, env)
-                    # Here calculate invasion potential (only if invasion can happen, otherwise is not used)
-                    for e in env_pair_dict.keys():
-                        fit, fit_1, fit_2 = env_pair_fitness(archive[i].genome, env_pair_dict[e])
-                        archive[i].invasion_potential[e] = [fit, fit_1, fit_2]
-                    # Save the trade_off and modularity score
-                    archive[i].trade_off = score_tradeOff
-                    archive[i].modularity = score_mod
-                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
-                    inv = 0
-                    if sim_n > (sim / 2) - 1:
-                        inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
-            n_evaluations += 1
-            if n_evaluations % 50 == 0:
-                print("Steps: ", n_evaluations)
-            # Transfer
-            # At specific time point or fitness value specified in params['transfer'] the linage are tested outside
-            # the environment
-            if params['transfer'] != 0:
-                if n_evaluations in params['transfer']:
-                    transfer_n += 1
-                    for env_transfer in params["env_transfer"]:
-                        archive_t = copy.deepcopy(archive)
-                        n_evaluations_t = n_evaluations
-                        max_t = n_evaluations_t + params['length_transfer']
-                        n_evaluations_t = n_evaluations_t + 1
-                        while n_evaluations_t < max_t:
-                            for i in archive_t.keys():
-                                start_g = archive_t[i].genome
-                                all_mut = generate_all_mutants(start_g)
-                                env = env_pair_dict_t[env_transfer]
-                                score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                                score_mod = score_Modularity(start_g, all_mut, env)
-                                mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                                if mutated_genome != []:
-                                    archive_t[i].genome = mutated_genome
-                                archive_t[i].fitness = env_pair_fitness_average(archive_t[i].genome, env)
-                                # Save the trade_off and modularity score
-                                archive_t[i].trade_off = score_tradeOff
-                                archive_t[i].modularity = score_mod
-                                archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, transfer_n, params['s_invasion'],
-                                              inv, params["p"])
-                            n_evaluations_t += 1
-    return archive
-
-
-def compute_invasion_transfer_avg_transfer(max_evals=10,
-                              env_pair_dict_l=[],
-                              sim=[],
-                              params=[]):
-    print("Params: ", "\n")
-    print(params)
-    print("\n")
-    cm.save_params(params)
-
-    for sim_n in range(0, sim):
-
-        print("Sim: ", sim_n)
-        # The environment pairs are assigned from outside compute function
-        env_pair_dict = copy.deepcopy(env_pair_dict_l[sim_n])
-        env_pair_dict_t = copy.deepcopy(env_pair_dict)
-
-        if params['del'] != [0]:
-            for i in params['del']:
-                del env_pair_dict[i]
-
-        cm.save_env(env_pair_dict_t, sim_n)
-
-        # This is the random seed for mutations
-        np.random.seed(sim_n + params["seed"])
-
-        # init archive (empty)
-        archive = {}
-        initialize = 0
-        transfer_n = 0
-
-        # main loop
-        n_evaluations = 0  # number of evaluations
-        while n_evaluations < max_evals + 1:
-            # If environment is empty fill with random individuals
-            if initialize == 0:
-                j = 0
-                for i in env_pair_dict.keys():
-                    g = generate_genome(params['k'], params['l'], params['p'], sim_n + params["seed"])
-                    # calculate fitness and invasion potential
-                    fit = env_pair_fitness_average(g, env_pair_dict[i])
-                    inv_pot = {}
-                    for e in env_pair_dict:
-                        fit, fit_1, fit_2 = env_pair_fitness(g, env_pair_dict[e])
-                        inv_pot[e] = [fit, fit_1, fit_2]
-                    # Score starting feature of the genome g
-                    all_mut = generate_all_mutants(g)
-                    env = env_pair_dict[i]
-                    score_tradeOff = scoreTradeOff(g, all_mut, env)
-                    score_mod = score_Modularity(g, all_mut, env)
-                    pos = i
-                    # Pack traits and feature, make Ind and add to archive
-                    sum_p0, sum_p1 = sum_p_genome(g)
-                    ps = sum_p0 + sum_p1
-                    *to_gen_ind, = pos, g, score_mod, score_tradeOff, fit, inv_pot, sum_p0, sum_p1, ps
-                    ind = make_ind_inv(to_gen_ind)
-                    add_to_archive(pos, ind, archive)
-                    j += 1
-                initialize = 1
-            # Invasion
-            if params['invasion'] is True and sim_n > (sim / 2) - 1 and n_evaluations > 10:
-                invasion_p = np.random.binomial(1, params['invasion_rate'], 1)
-                if invasion_p == 1:
-                    for ind in archive.keys():
-                        keys = list(archive.keys())
-                        coordinates = np.random.choice(keys, 1, replace=False)
-                        w = coordinates[0]
-                        invader = archive[ind]
-                        wild_type = archive[w]
-
-                        inv_f = invader.invasion_potential[w]
-                        w_f = wild_type.invasion_potential[w]
-
-                        env_inv = 0
-
-                        if inv_f[env_inv] > w_f[env_inv]:
-                            archive[w] = copy.deepcopy(archive[ind])
-                            archive[w].position = w
-                            # If invasion is successful then save it
-                            cm.__save_file_mig(ind, w, n_evaluations, sim_n, params['s_invasion'], params['invasion_rate'],
-                                               invader.ps, wild_type.ps, invader.sum_p0, invader.sum_p1,
-                                               wild_type.sum_p0, wild_type.sum_p1)
-            # Main mutation selection loop
-            if n_evaluations < max_evals + 1:
-                for i in archive.keys():
-                    start_g = archive[i].genome
-                    all_mut = generate_all_mutants(start_g)
-                    env = env_pair_dict[i]
-                    score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                    score_mod = score_Modularity(start_g, all_mut, env)
-                    mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                    if mutated_genome != []:
-                        archive[i].genome = mutated_genome
-                    archive[i].fitness = env_pair_fitness_average(archive[i].genome, env)
-                    # Here calculate invasion potential (only if invasion can happen, otherwise is not used)
-                    for e in env_pair_dict.keys():
-                        fit, fit_1, fit_2 = env_pair_fitness(archive[i].genome, env_pair_dict[e])
-                        archive[i].invasion_potential[e] = [fit, fit_1, fit_2]
-                    # Save the trade_off and modularity score
-                    archive[i].trade_off = score_tradeOff
-                    archive[i].modularity = score_mod
-                    archive[i].sum_p0, archive[i].sum_p1 = sum_p_genome(archive[i].genome)
-                    inv = 0
-                    if sim_n > (sim / 2) - 1:
-                        inv = 1
-            cm.__save_archive(archive, n_evaluations, sim_n, 0, 0, params['s_invasion'], params['invasion_rate'],
-                              inv, params["p"])
-            n_evaluations += 1
-            if n_evaluations % 50 == 0:
-                print("Steps: ", n_evaluations)
-            # Transfer
-            if params['transfer'] is True and n_evaluations > 250:
-                if -0.65 <= archive[1.1].fitness <= -0.6:
-                    transfer_n += 1
-                    for env_transfer in params["env_transfer"]:
-                        archive_t = copy.deepcopy(archive)
-                        max_t = params['length_transfer']
-                        n_evaluations_t = 0
-                        while n_evaluations_t < max_t:
-                            for i in archive_t.keys():
-                                start_g = archive_t[i].genome
-                                all_mut = generate_all_mutants(start_g)
-                                env = env_pair_dict_t[env_transfer]
-                                score_tradeOff = scoreTradeOff(start_g, all_mut, env)
-                                score_mod = score_Modularity(start_g, all_mut, env)
-                                mutated_genome = gen_lucky_mut(start_g, all_mut, env)
-                                if mutated_genome != []:
-                                    archive_t[i].genome = mutated_genome
-                                archive_t[i].fitness = env_pair_fitness_average(archive_t[i].genome, env)
-                                # Save the trade_off and modularity score
-                                archive_t[i].trade_off = score_tradeOff
-                                archive_t[i].modularity = score_mod
-                                archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
-                                inv = 0
-                                if sim_n > (sim / 2) - 1:
-                                    inv = 1
-                            cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, transfer_n,
-                                              params['s_invasion'], params['invasion_rate'], inv, params["p"])
-                            n_evaluations_t += 1
-                    # This trigger the end of the sim
-                    n_evaluations = max_evals + 1
+            env_t_n = 0
+            if n_evaluations == 250:
+                for env_n in env_pair_dict_l:
+                    env_t_n += 1
+                    env_transfer = 1.3
+                    archive_t = copy.deepcopy(archive)
+                    archive_t = {k: v for k, v in archive_t.items() if k == 0.9}
+                    n_evaluations_t = n_evaluations
+                    max_t = n_evaluations_t + params_sim['length_transfer']
+                    n_evaluations_t = n_evaluations_t + 1
+                    while n_evaluations_t < max_t:
+                        for i in archive_t.keys():
+                            start_g = archive_t[i].genome
+                            all_mut = generate_all_mutants(start_g)
+                            env = env_n[env_transfer]
+                            score_tradeOff = scoreTradeOff(start_g, all_mut, env)
+                            score_mod = score_Modularity(start_g, all_mut, env)
+                            mutated_genome = gen_lucky_mut(start_g, all_mut, env)
+                            if mutated_genome != []:
+                                archive_t[i].genome = mutated_genome
+                            archive_t[i].fitness = env_pair_fitness_average(archive_t[i].genome, env)
+                            # Save the trade_off and modularity score
+                            archive_t[i].trade_off = score_tradeOff
+                            archive_t[i].modularity = score_mod
+                            archive_t[i].sum_p0, archive_t[i].sum_p1 = sum_p_genome(archive_t[i].genome)
+                        cm.__save_archive(archive_t, n_evaluations_t, sim_n, env_transfer, env_t_n, int(params_sim['avg']),
+                                          params_sim['invasion_rate'], inv, params_sim["p"], folder, ''.join(str(params_sim["env_list"])))
+                        n_evaluations_t += 1
+                        if n_evaluations_t % 50 == 0:
+                            print("Steps: ", n_evaluations_t, "env: ", env_transfer, 'n: ', env_t_n)
     return archive

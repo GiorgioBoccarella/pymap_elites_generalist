@@ -40,32 +40,72 @@
 import numpy as np
 import os
 # Default params are general for all simulation
+# Base Line params
 
-initial_params = \
+baseline_params = \
     {
         "seed": 1000,
         "l_n": 100,
         "env_list": [0.1, 0.3, 0.9, 1.1, 1.2, 1.3],
-        "max_evals": 500,
-        "sim": 10
+        "max_evals": 250,
+        "sim": 10,
+        "folder_p": "base_line_p25"
     }
 
 
-
-params_1 = \
+baseline_sim_params = \
     {
         "seed": 100,
-        "p": 0,
+        "p": 25,
         'l': 100,
         'k': 2,
-        'invasion': True,
-        'invasion_rate': 1,
-        's_invasion': 1,
     }
 
+# Invasion params
 
 
 
+params_sim_t = \
+    {
+        "seed_e": 800,
+        "seed_s": 3450,
+        "l_n": 100,
+        "env_list": [0.1, 1.0, 1.3],
+        "max_evals": 250,
+        "sim": 40,
+        "del": [1.3],
+        "p": 0,
+        'l': 100,
+        'k': 4,
+        'invasion': True,
+        'invasion_rate': 1,
+        'avg': True,
+        'env_transfer': [1.3],
+        'length_transfer': 100,
+        "folder": "test_transfer_1.3_k4_l100_sim20/"
+    }
+
+params_sim_t_1 = \
+    {
+        "seed_e": 800,
+        "seed_s": 3450,
+        "l_n": 100,
+        "env_list": [0.1, 1.0, 1.3],
+        "max_evals": 250,
+        "sim": 40,
+        "del": [1.3],
+        "p": 80,
+        'l': 100,
+        'k': 4,
+        'invasion': True,
+        'invasion_rate': 1,
+        'avg': True,
+        'env_transfer': [1.3],
+        'length_transfer': 100,
+        "folder": "test_transfer_1.3_k4_l100_sim20/"
+    }
+
+p
 class Ind:
     def __init__(self, position, genome, modularity, trade_off, fitness, invasion_potential,
                  sum_p0, sum_p1, ps):
@@ -93,15 +133,10 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
 
 
 # define the name of the directory to be created
-folder = "/home/giorg/Documents/result_wrap/test_base_fitness/"
-
-if not os.path.exists(folder):
-    os.makedirs(folder)
-
-print(folder)
 # format: fitness, centroid, desc, genome \n
-def __save_archive(archive, gen, sim, transfer_in, transfer_n, inv_rate, rate, inv, p):
-    filename = str(folder) + 'archive' + '.dat'
+def __save_archive_inv_pot(archive, gen, sim, transfer_in, transfer_n, inv_rate, rate, inv, p, folder_i, env_l):
+    folder_i = "/home/giorg/Documents/result_wrap/" + str(folder_i)
+    filename = str(folder_i) + 'archive' + '.dat'
     with open(filename, 'a+') as f:
         for k in archive.values():
             f.write(str(k.position) + ' ')
@@ -122,12 +157,35 @@ def __save_archive(archive, gen, sim, transfer_in, transfer_n, inv_rate, rate, i
             f.write(str(rate) + " ")
             f.write(str(inv) + " ")
             f.write(str(p) + " ")
+            f
             f.write("\n")
 
 
+def __save_archive(archive, gen, sim, transfer_in, transfer_n, inv_rate, rate, inv, p, folder_i, env_l):
+    filename = str(folder_i) + 'archive' + '.dat'
+    with open(filename, 'a+') as f:
+        for k in archive.values():
+            f.write(str(k.position) + ' ')
+            f.write(str(k.fitness) + ' ')
+            f.write(str(k.modularity) + ' ')
+            f.write(str(k.trade_off) + ' ')
+            f.write(str(k.sum_p0) + ' ')
+            f.write(str(k.sum_p1) + ' ')
+            f.write(str(k.ps) + ' ')
+            f.write(str(gen) + ' ')
+            f.write(str(sim) + ' ')
+            f.write(str(transfer_in) + " ")
+            f.write(str(transfer_n) + " ")
+            f.write(str(inv_rate) + " ")
+            f.write(str(rate) + " ")
+            f.write(str(inv) + " ")
+            f.write(str(p) + " ")
+            f.write(str(env_l) + " ")
+            f.write("\n")
+
 def __save_file_mig(invader, wild, epoch, sim, inv_rate, rate, ips, wps, sum_p0_invader,
-                    sum_p1_invader, sum_p0_wild, sum_p1_wild):
-    filename = str(folder) + 'invasion_id' + '.dat'
+                    sum_p1_invader, sum_p0_wild, sum_p1_wild, inv, folder_i, env_l):
+    filename = str(folder_i) + 'invasion_id' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(invader) + " ")
         f.write(str(wild) + " ")
@@ -141,19 +199,22 @@ def __save_file_mig(invader, wild, epoch, sim, inv_rate, rate, ips, wps, sum_p0_
         f.write(str(sum_p1_invader) + " ")
         f.write(str(sum_p0_wild) + " ")
         f.write(str(sum_p1_wild) + " ")
+        f.write(str(inv) + " ")
+        f.write(str(env_l) + " ")
         f.write("\n")
 
 
-def save_params(params):
-    filename = str(folder) + 'params' + '.dat'
+def save_params(params, folder_i):
+    filename = str(folder_i) + 'params' + '.dat'
     with open(filename, 'a+') as f:
         f.write(str(params) + " ")
         f.write('\n')
 
 
 
-def save_env(env, sim):
-    filename = str(folder) + 'env_list' + '.dat'
+def save_env(env, sim, folder_i):
+    folder_i = "/home/giorg/Documents/result_wrap/" + str(folder_i)
+    filename = str(folder_i) + 'env_list' + '.dat'
     with open(filename, 'a+') as f:
         for k, v in env.items():
             for val in v:

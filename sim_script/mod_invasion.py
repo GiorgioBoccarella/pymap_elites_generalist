@@ -38,66 +38,19 @@
 #| had knowledge of the CeCILL license and that you accept its terms.
 #
 
-import math
-import numpy as np
-import random
-
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import map_elites.model_functions as mt_map_elites
-
-from sim_script import generate_env
 from map_elites import common as cm
 
 
-params = cm.initial_params
-
-# Seed MUST BE different from 0 (see gen_env)
-# For each sim generate random seed
-seed = params["seed"]
-l_n = params["l_n"]
-env_list = params["env_list"]
 
 
-
-def environment_from_params(env_list_v, l_n, seed):
-    example_env = 1.3
-    envPair = generate_env.environmentPair(l_n, seed)
-    env = envPair(example_env)
-
-    envPair_c = generate_env.environmentPair(env, 0)
-
-    envList = []
-
-    for i in range(0, len(env_list_v)):
-        envList.append(envPair_c(env_list_v[i]))
-
-    envList = np.array(envList)
-    envList = envList.real
-
-    return envList
-
-all_env_sim = []
-
-for i in range(0, params['sim'] + 2):
-    new_seed = seed + i
-    envList = environment_from_params(env_list, l_n, new_seed)
-    env_pair_d = {}
-    for d, s in zip(env_list, envList):
-        env_pair_d[d] = s
-    all_env_sim.append(env_pair_d)
+mt_map_elites.compute_invasion_transfer_new(params_sim=cm.params_sim_t)
+mt_map_elites.compute_invasion_transfer_new(params_sim=cm.params_sim_t_1)
 
 
-
-
-# The file concatenates the simulation output so is possible to concatenate in a single file
-# This is necessary to observe how invasion affects evolutionary trajectory
-
-
-
-mt_map_elites.compute_base_line_fitness(max_evals=params["max_evals"], env_pair_dict_l=all_env_sim,
-                                        sim=params["sim"], params=cm.params_1)
 
 print("Simulation end")
 
