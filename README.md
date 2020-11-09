@@ -55,4 +55,3 @@ params_sim_t = \
     }
 ```
 
-See the `examples` directory for a few examples.
