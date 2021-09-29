@@ -1,4 +1,32 @@
 # Python3 Map-Elites and the evolution of trade-offs
+
+Abstract:
+
+Specialist and Generalist often coexist in nature and the classic explanation for
+this coexistence is the presence of trade-offs. Theory often assumes that a
+‘jack-of-all-trades is a master of none’ and generalist always encounter genetic
+trade-off that stops them from displacing specialist. The presence of these fixed
+trade-offs has been hard to detect empirically and when present it may be
+ameliorated over time. For these reasons in this work, I relaxed this assumption
+and considered the genome architecture with features as trade-off and
+modularity as emergent and evolving properties. The framework here used
+does not aim to be specific for a particular species but aims to uncover deeper
+fundamental question of evolution in a pair of similar or dissimilar
+environments which is the scenario respectively encountered by specialist and
+generalist. I hereby show that evolved genome property has a strong influence
+on evolutionary trajectory that may help or hinder evolution of a generalist or
+specialist lineage. In particular, I demonstrated that generalists suffer from
+specialist invasions that cause the fixation of nonoptimal genome architecture
+and ultimately hampers the capacity of a generalist to be well adapted to their
+niche. Hence demonstrating that no cost generalism is possible but hard to
+reach due to specialist competition. In this case, successful invasions can have
+important consequences on genealogical structures and potentially diminish
+the capacity for adaptation to multiple environments. One factor that is relevant
+for this effect is the initial state of the genome at the beginning of evolution.
+Previous evolutionary history is shown to be a key factor for predicting the
+evolutionary trajectory of a lineage.
+
+
 This repository contains "reference implementations" of:
 - CVT-MAP-Elites (Vassiliades, Chatzilygeroudis, Mouret, 2017)
 - Multitask-MAP-Elites (Mouret and Maguire, 2020)
@@ -34,24 +62,5 @@ If you use this code in a scientific paper, please cite:
 mt_map_elites.compute_invasion_transfer_new(params_sim=cm.params_sim_t)
 
 ```
-params_sim_t = \
-    {
-        "seed_e": 800, # seed environment
-        "seed_s": 3450, # seed mutation
-        "l_n": 100, # L lenght of environment
-        "env_list": [0.1, 1.0, 1.3],# generate list of environment with Delta E
-        "max_evals": 250, # max mutation steps
-        "sim": 40, # number of simulation
-        "del": [1.3], # Delete environment from list
-        "p": 0, # Initial p regulator
-        'l': 100, # lenght of genome k-basis
-        'k': 4, # number of k
-        'invasion': True, # Invasion true or false
-        'invasion_rate': 1, # How often invasion (0-1)
-        'avg': True, # Invade base on average fitness
-        'env_transfer': [1.3], # Transfer in this env
-        'length_transfer': 100, # Lenght Transfer
-        "folder": "test_transfer_1.3_k4_l100/"
-    }
-```
+
 
