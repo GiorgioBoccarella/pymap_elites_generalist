@@ -1,6 +1,6 @@
 # Python3 Map-Elites and the evolution of trade-offs
 
-Abstract:
+## Abstract:
 
 Specialist and Generalist often coexist in nature and the classic explanation for
 this coexistence is the presence of trade-offs. Theory often assumes that a
