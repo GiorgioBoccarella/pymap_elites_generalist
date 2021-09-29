@@ -1,4 +1,4 @@
-# Python3 Map-Elites 
+# Python3 Map-Elites and the evolution of trade-offs
 This repository contains "reference implementations" of:
 - CVT-MAP-Elites (Vassiliades, Chatzilygeroudis, Mouret, 2017)
 - Multitask-MAP-Elites (Mouret and Maguire, 2020)
