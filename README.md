@@ -13,7 +13,7 @@ modularity as emergent and evolving properties. The framework here used
 does not aim to be specific for a particular species but aims to uncover deeper
 fundamental question of evolution in a pair of similar or dissimilar
 environments which is the scenario respectively encountered by specialist and
-generalist. In particular, individuals have a simple bacteria metabolic network and fitness depend on matching a certain environment stoichiometry. 
+generalist. Briefly, individuals have a simple bacteria metabolic network and fitness depend on matching a certain environment stoichiometry. 
 I hereby show that evolved genome property has a strong influence
 on evolutionary trajectory that may help or hinder evolution of a generalist or
 specialist lineage. In particular, I demonstrated that generalists suffer from
